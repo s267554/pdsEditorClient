@@ -85,6 +85,8 @@
 #endif
 
 #include "textedit.h"
+#include <QPainter>
+#include <QAbstractTextDocumentLayout>
 
 
 #ifdef Q_OS_MAC
@@ -161,7 +163,10 @@ TextEdit::TextEdit(QWidget *parent)
 #endif
 
     // my add
-    cursor2 = new QTextCursor(textEdit->textCursor());
+    // inizializzare _cursors
+
+    // da rimuovere
+    // cursor2 = new QTextCursor(textEdit->textCursor());
 
 }
 
@@ -454,6 +459,8 @@ void TextEdit::fileNew()
     /* my add */
     connect(textEdit->document(), &QTextDocument::contentsChange,
             this, &TextEdit::CatchChangeSignal);
+    connect(textEdit, &QTextEdit::cursorPositionChanged,
+            this, &TextEdit::myCursorPositionChanged);
     /* my add */
 }
 
@@ -705,11 +712,7 @@ void TextEdit::currentCharFormatChanged(const QTextCharFormat &format)
 
 void TextEdit::cursorPositionChanged()
 {
-    //my add
-    // con nuovo file il cursore cambia prima posizione a 0
-    // creo messaggio per comunicare che ho cambiato posizione del cursore
-    int mypos = textEdit->textCursor().position();
-    // manda posizione
+
 
     alignmentChanged(textEdit->alignment());
     QTextList *list = textEdit->textCursor().currentList();
@@ -804,6 +807,7 @@ void TextEdit::alignmentChanged(Qt::Alignment a)
 
 void TextEdit::CatchChangeSignal(int pos, int rem, int add){
     if(rem != 0){
+        // workaround brutto, ricontrollare
         if(pos==0 && add!=0)
             rem--;
         for(int i=0;i<rem;i++){
@@ -811,12 +815,28 @@ void TextEdit::CatchChangeSignal(int pos, int rem, int add){
         }
     }
     if(add!=0){
+        // vedi sopra
         if(pos==0 && rem!=0)
             add--;
         for(int i=0;i<add;i++){
             localInsert(pos+i, textEdit->document()->characterAt(pos+i));
         }
     }
+    if(textEdit->toPlainText()=="prova"){
+        User u(123, "nico", "red");
+        NotifyCursor n(2, 123);
+        _cursors.insert(123, textEdit->textCursor());
+        process(n);
+    }
+}
+
+void TextEdit::myCursorPositionChanged(){
+    //my add
+    // con nuovo file il cursore cambia prima posizione a 0
+    // creo messaggio per comunicare che ho cambiato posizione del cursore
+    int mypos = textEdit->textCursor().position();
+    // manda posizione
+
 }
 
 void TextEdit::localInsert(int index, QChar value) {
@@ -877,15 +897,62 @@ TextEdit::SharedEditor(NetworkServer &_server) : _server(_server) {
 }
 */
 
+void TextEdit::paintEvent(QPaintEvent *event) {
+
+    //QPainter painter(textEdit->viewport());
+
+    //originale:
+
+//    QAbstractTextDocumentLayout::Selection selection;
+//    selection.cursor = textCursor();
+//    selection.format = currentCharFormat();
+
+//    QAbstractTextDocumentLayout::PaintContext ctx;
+//    ctx.cursorPosition = textCursor().position();
+//    ctx.selections.append(selection);
+
+//    document()->documentLayout()->draw(&painter,ctx);
+
+
+    QMainWindow::paintEvent(event);
+    for(auto i: _cursors){
+//        QAbstractTextDocumentLayout::PaintContext ctx;
+//        ctx.cursorPosition = i.position();
+//        textEdit->document()->documentLayout()->draw(&painter, ctx);
+        const QRect qRect = textEdit->cursorRect(i);
+        QPainter qPainter(textEdit->viewport());
+        qPainter.fillRect(qRect, "red");
+    }
+}
+
 void TextEdit::process(const NotifyCursor &n) {
+    // DA RIVEDERE!!!
+//    auto q = _cursors.find(n.uid).value();
+//    q.setPosition(n.cursPos);
 
-    // DA IMPLEMENTARE!!!
-    // cursor2 = getCursorFromId(n.uid);
-    this->cursor2->setPosition(n.cursPos);
+    // update foreign cursor view
+    //paintCursor(&q);
+    auto q = _cursors.find(n.uid);
+    if(q->isNull()){
+        _cursors.insert(n.uid, textEdit->textCursor());
+    }
+    _cursors.find(n.uid)->setPosition(n.cursPos);
 
+    update();
+//    textEdit->update();
+
+    //paintCursor(cursor2);
 }
 
 void TextEdit::process(const Message& m) {
+
+    disconnect(textEdit->document(), &QTextDocument::contentsChange,
+            this, &TextEdit::CatchChangeSignal);
+    // overkill?? dovrebbero essere cursori NON principali
+    // non voglio notificare il server
+    disconnect(textEdit, &QTextEdit::cursorPositionChanged,
+            this, &TextEdit::myCursorPositionChanged);
+
     switch(m.mType) {
         case 'i': {
             int i;
@@ -901,19 +968,41 @@ void TextEdit::process(const Message& m) {
                     digit++;
                 }
             }
+
             _symbols.insert(_symbols.begin() + i, m.sym);
+
+            _cursors.find(m.genFrom)->setPosition(i);
+            _cursors.find(m.genFrom)->insertText(m.sym.c);
         }
             break;
         case 'e': {
+        int i = 0;
             for (auto it = _symbols.begin(); it != _symbols.end(); it++) {
                 if (it->siteid == m.sym.siteid && it->count == m.sym.count) {
+
                     _symbols.erase(it);
+
+                    _cursors.find(m.genFrom)->setPosition(i);
+                    // WARNING Sceglierne uno tra previous e questo
+                    _cursors.find(m.genFrom)->deleteChar();
+
                     break;
                 }
             }
+            i++;
         }
             break;
     }
+
+
+    // update foreign cursor view
+
+    connect(textEdit->document(), &QTextDocument::contentsChange,
+            this, &TextEdit::CatchChangeSignal);
+    //vedere sopra
+    connect(textEdit, &QTextEdit::cursorPositionChanged,
+            this, &TextEdit::myCursorPositionChanged);
+
 }
 
 QString TextEdit::to_string() {

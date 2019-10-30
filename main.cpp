@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
     parser.addPositionalArgument("file", "The file to open.");
     parser.process(a);
 
+
+
     TextEdit mw;
 
     const QRect availableGeometry = QApplication::desktop()->availableGeometry(&mw);

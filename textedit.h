@@ -55,6 +55,9 @@
 #include <QMap>
 #include <QPointer>
 
+// my add for temporary QTextCursor class
+#include <QTextCursor>
+
 QT_BEGIN_NAMESPACE
 class QAction;
 class QComboBox;
@@ -63,14 +66,37 @@ class QTextEdit;
 class QTextCharFormat;
 class QMenu;
 class QPrinter;
-// my add for temporary QTextCursor class
-class QTextCursor;
 QT_END_NAMESPACE
 
+
+/* DA AGGIUNGERE (tutti messaggi che devono essere distribuiti a TUTTI i client)
+ *
+ *
+ * MESSAGGI DI NUOVA CONNESSIONE FINE CONNESSIONE DI UN CLIENT PER AGGIORNARE _users
+ *
+ * questi qui sotto non servono
+ * perchè editor rimuove e ri inserisce i caratteri
+ * bisogna aggiungere informazioni alla classe Symbol
+ * 'f' MESSAGGI DI CAMBIO FORMATO SU SINGOLO CARATTERE
+ * 'a' MESSAGGI DI CAMBIO ALLINEAMENTO SU RIGA
+ *
+ *
+ *
+*/
+
+
 /* my add */
+class User{
+public:
+    User(int u, QString n, QColor col): uid(u), nick(n), color(col){}
+    int uid;
+    QString nick;
+    QColor color;
+};
 
 class NotifyCursor{
 public:
+    NotifyCursor(int curs, int u): cursPos(curs), uid(u){}
     int cursPos;
     int uid;
 };
@@ -116,6 +142,8 @@ public:
     void process(const Message &m);
     QString to_string();
     void process(const NotifyCursor &n);
+protected:
+    void virtual paintEvent(QPaintEvent *event) override;
 private:
     std::vector<Symbol> _symbols;
     int _counter = 0;
@@ -128,8 +156,9 @@ public slots:
     /* my add */
     void CatchChangeSignal(int pos, int rem, int add); // move to private?
 
+    void myCursorPositionChanged();
 protected:
-    void closeEvent(QCloseEvent *e) override;
+    void virtual closeEvent(QCloseEvent *e) override;
 
 private slots:
     void fileOpen();
@@ -201,7 +230,11 @@ private:
     // devo solo creare strutture dati per associare questi finti cursori agli utenti collegati e ad un colore
     // dov'è la struttura dati con gli utenti collegati? editor? a livello più alto?
 
+    QVector<User> _users;
+    QMap<int, QTextCursor> _cursors;
+
     QTextCursor* cursor2;
+
 };
 
 #endif // TEXTEDIT_H
