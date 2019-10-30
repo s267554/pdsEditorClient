@@ -820,6 +820,7 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
         }
     }
 
+// per simulare comparsa cursore altrui
 /*              ATTENZIONE È UNA PROVA              */
     if(toPlainText()=="prova"){
         User u(123, "nico", "red", textCursor());
