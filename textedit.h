@@ -55,43 +55,27 @@
 #include <QMap>
 #include <QPointer>
 
-// my add for temporary QTextCursor class
-#include <QTextCursor>
-
 QT_BEGIN_NAMESPACE
 class QAction;
 class QComboBox;
 class QFontComboBox;
-class QTextEdit;
 class QTextCharFormat;
 class QMenu;
 class QPrinter;
 QT_END_NAMESPACE
 
-
-/* DA AGGIUNGERE (tutti messaggi che devono essere distribuiti a TUTTI i client)
- *
- *
- * MESSAGGI DI NUOVA CONNESSIONE FINE CONNESSIONE DI UN CLIENT PER AGGIORNARE _users
- *
- * questi qui sotto non servono
- * perchè editor rimuove e ri inserisce i caratteri
- * bisogna aggiungere informazioni alla classe Symbol
- * 'f' MESSAGGI DI CAMBIO FORMATO SU SINGOLO CARATTERE
- * 'a' MESSAGGI DI CAMBIO ALLINEAMENTO SU RIGA
- *
- *
- *
-*/
+#include <QTextCursor>
+#include <QTextEdit>
 
 
-/* my add */
+/* MY ADD START */
 class User{
 public:
-    User(int u, QString n, QColor col): uid(u), nick(n), color(col){}
-    int uid;
+    User(int u, QString n, QColor col, QTextCursor tc): uid(u), nick(n), color(col), curs(tc){}
+    int uid;                    // se faccio map<int, user> non serve, la uso come chiave
     QString nick;
     QColor color;
+    QTextCursor curs;
 };
 
 class NotifyCursor{
@@ -118,17 +102,13 @@ public:
     int genFrom;
 
 };
-/* my add */
 
-class TextEdit : public QMainWindow
-{
+class MyQTextEdit: public QTextEdit{
     Q_OBJECT
-
 public:
-    TextEdit(QWidget *parent = 0);
-
-    bool load(const QString &f);
-
+    MyQTextEdit(QWidget* p);
+    ~MyQTextEdit();
+    void paintEvent(QPaintEvent *e);
     /* my add */
     void localInsert(int i, QChar i1);
     void localErase(int i);
@@ -143,20 +123,38 @@ public:
     QString to_string();
     void process(const NotifyCursor &n);
 protected:
-    void virtual paintEvent(QPaintEvent *event) override;
+    //void paintEvent(QPaintEvent *event);
 private:
     std::vector<Symbol> _symbols;
     int _counter = 0;
 
     /* my add */
-
 public slots:
-    void fileNew();
-
     /* my add */
     void CatchChangeSignal(int pos, int rem, int add); // move to private?
 
     void myCursorPositionChanged();
+private:
+    //QMap<int, User> _users;
+    //QMap<int, QTextCursor> _cursors;
+    //QTextCursor* cursor2;
+    QMap<int, User> _users;
+
+};
+
+/* MY ADD END */
+
+class TextEdit : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    TextEdit(QWidget *parent = 0);
+
+    bool load(const QString &f);
+
+public slots:
+    void fileNew();
 protected:
     void virtual closeEvent(QCloseEvent *e) override;
 
@@ -219,21 +217,7 @@ private:
 
     QToolBar *tb;
     QString fileName;
-    QTextEdit *textEdit;
-
-    // my add
-    // esperimento con cursori estranei
-
-    // ForeignCursor f1();
-    // idealmente ForeignCursor è un tipo per i cursori estranei, sono oggetti con SOLO l'apperenza di un QTextCursor
-    // catturo i movimenti del mio cursore principale e li trasmetto agli altri, i quali li vedono come Foreigncursor, immagini di un cursore |
-    // devo solo creare strutture dati per associare questi finti cursori agli utenti collegati e ad un colore
-    // dov'è la struttura dati con gli utenti collegati? editor? a livello più alto?
-
-    QVector<User> _users;
-    QMap<int, QTextCursor> _cursors;
-
-    QTextCursor* cursor2;
+    MyQTextEdit *textEdit;                          // ONLY CHANGE
 
 };
 
