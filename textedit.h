@@ -109,7 +109,6 @@ public:
     MyQTextEdit(QWidget* p);
     ~MyQTextEdit();
     void paintEvent(QPaintEvent *e);
-    /* my add */
     void localInsert(int i, QChar i1);
     void localErase(int i);
 
@@ -118,26 +117,18 @@ private:
     int _siteId = 0;
 public:
     int getSiteId();
-
-    void process(const Message &m);
     QString to_string();
+    void process(const Message &m);
     void process(const NotifyCursor &n);
-protected:
-    //void paintEvent(QPaintEvent *event);
 private:
     std::vector<Symbol> _symbols;
     int _counter = 0;
-
-    /* my add */
 public slots:
-    /* my add */
     void CatchChangeSignal(int pos, int rem, int add); // move to private?
 
     void myCursorPositionChanged();
 private:
-    //QMap<int, User> _users;
-    //QMap<int, QTextCursor> _cursors;
-    //QTextCursor* cursor2;
+
     QMap<int, User> _users;
 
 };

@@ -105,7 +105,7 @@ TextEdit::TextEdit(QWidget *parent)
 #endif
     setWindowTitle(QCoreApplication::applicationName());
 
-    textEdit = new MyQTextEdit(this);
+    textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGE HERE
     connect(textEdit, &QTextEdit::currentCharFormatChanged,
             this, &TextEdit::currentCharFormatChanged);
     connect(textEdit, &QTextEdit::cursorPositionChanged,
@@ -785,21 +785,20 @@ void TextEdit::alignmentChanged(Qt::Alignment a)
         actionAlignJustify->setChecked(true);
 }
 
+// ------------------------------------------------------------------------------------------------
+
 /* MY ADDS START */
 
 MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
-    /* my add */
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
     connect(this, &QTextEdit::cursorPositionChanged,
             this, &MyQTextEdit::myCursorPositionChanged);
-    /* my add */
 
 }
 
-// se tolgo questo non ho la vtable
-// studia
+// se tolgo questo non ho la vtable STUDIA!!!
 MyQTextEdit::~MyQTextEdit(){}
 
 
@@ -820,23 +819,24 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
             localInsert(pos+i, document()->characterAt(pos+i));
         }
     }
+
+/*              ATTENZIONE È UNA PROVA              */
     if(toPlainText()=="prova"){
         User u(123, "nico", "red", textCursor());
-
-        NotifyCursor n(2, 123);             // PROVA  A TOGLIERE
-
+        NotifyCursor n(2, 123);
         _users.insert(u.uid, u);
         process(n);
         update();
     }
+/*              FINE PROVA                          */
+
 }
 
 void MyQTextEdit::myCursorPositionChanged(){
-    //my add
-    // con nuovo file il cursore cambia prima posizione a 0
-    // creo messaggio per comunicare che ho cambiato posizione del cursore
+
     int mypos = textCursor().position();
-    // manda posizione
+    NotifyCursor notify(mypos, _siteId);
+//  _server.send(Message('i', mysym, _siteId));
 
 }
 
@@ -877,7 +877,6 @@ void MyQTextEdit::localInsert(int index, QChar value) {
     Symbol mysym{value, _siteId, _counter, myfract};
     _symbols.insert(std::next(_symbols.begin(), index), mysym);
 
-    // gestione socket nell'editor??
     //_server.send(Message('i', mysym, _siteId));
 
     _counter++;
@@ -885,13 +884,11 @@ void MyQTextEdit::localInsert(int index, QChar value) {
 
 void MyQTextEdit::localErase(int i) {
 
-    // gestione socket nell'editor??
     //_server.send(Message('e', _symbols.at(i), _siteId));
 
     _symbols.erase(_symbols.begin()+i);
 }
 
-// gestione socket nell'editor??
 /*
 TextEdit::SharedEditor(NetworkServer &_server) : _server(_server) {
     _siteId = _server.connect(this);
@@ -910,11 +907,17 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
 void MyQTextEdit::process(const NotifyCursor &n) {
     // DA RIVEDERE!!!
+    // posso ricevere notifiche da "nuovi" utenti? TCP in order in teoria
+    // in ongi caso il server dovrebbe inviarmi prima l'avviso di un nuovo utente collegato
+
     auto q = _users.find(n.uid);
     q->curs.setPosition(n.cursPos);
+
+    //aggiorno la view
     update();
 }
 
+// riscrivere anche qui gli algos
 void MyQTextEdit::process(const Message& m) {
 
     disconnect(document(), &QTextDocument::contentsChange,
@@ -975,6 +978,11 @@ void MyQTextEdit::process(const Message& m) {
             this, &MyQTextEdit::myCursorPositionChanged);
 
 }
+
+// fine
+// probabilmente queste funzioni non servono più
+// ricordarsi di sistemare le classi nell'header
+// ovvero lo scope di membri e funzioni ora fa schifo
 
 QString MyQTextEdit::to_string() {
     QString ret;
