@@ -111,10 +111,10 @@ public:
     void paintEvent(QPaintEvent *e);
     void localInsert(int i, QChar i1);
     void localErase(int i);
-
 private:
     //NetworkServer& _server ;
     int _siteId = 0;
+    QMap<int, User> _users;
 public:
     int getSiteId();
     QString to_string();
@@ -129,7 +129,6 @@ public slots:
     void myCursorPositionChanged();
 private:
 
-    QMap<int, User> _users;
 
 };
 
