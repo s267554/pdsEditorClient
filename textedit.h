@@ -75,11 +75,11 @@ QT_END_NAMESPACE
 /* MY ADD START */
 class User{
 public:
-    User(int u, QString n, QColor col, int tc): uid(u), nick(n), color(col), curs(tc){}
+    User(int u, QString n, QColor col, int tc): uid(u), nick(n), color(col), startCursor(tc){}
     int uid;                    // se faccio map<int, user> non serve, la uso come chiave
     QString nick;
     QColor color;
-    int curs;
+    int startCursor;
     QImage icon; // controllare il tipo
 };
 
@@ -97,11 +97,13 @@ public:
 
 class Symbol {
 public:
-    Symbol(QChar i, int i1, int i2, std::vector<int>& vector): c(i), siteid(i1), count(i2), fract(vector){}
+    Symbol(QChar i, int i1, int i2, std::vector<int>& vector, QTextCharFormat qtcf):
+        c(i), siteid(i1), count(i2), fract(vector), format(qtcf){}
     QChar c;
     int siteid;
     int count;
     std::vector<int> fract;
+    QTextCharFormat format;         // ANCORA DA IMPLEMENTARE, probabilmente la property alignment sarà dura
 };
 
 class Message {
@@ -119,7 +121,7 @@ public:
     MyQTextEdit(QWidget* p);
     ~MyQTextEdit();
     void paintEvent(QPaintEvent *e);
-    void localInsert(int i, QChar i1);
+    void localInsert(int i, QChar i1, QTextCharFormat f);
     void localErase(int i);
 private:
     //NetworkServer& _server ;
@@ -138,6 +140,12 @@ public slots:
     void CatchChangeSignal(int pos, int rem, int add); // move to private?
 
     void myCursorPositionChanged();
+
+// last hot stuff
+public:
+
+    QDataStream in;                         // sarà da collegare al socket
+
 };
 
 /* MY ADD END */

@@ -816,7 +816,9 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
         if(pos==0 && rem!=0)
             add--;
         for(int i=0;i<add;i++){
-            localInsert(pos+i, document()->characterAt(pos+i));
+            auto cursor = QTextCursor();
+            cursor.setPosition(pos+i);
+            localInsert(pos+i, document()->characterAt(pos+i), cursor.charFormat());
         }
     }
 
@@ -846,7 +848,7 @@ void MyQTextEdit::myCursorPositionChanged(){
 
 }
 
-void MyQTextEdit::localInsert(int index, QChar value) {
+void MyQTextEdit::localInsert(int index, QChar value, QTextCharFormat charFormat) {
 
     std::vector<int> myfract;
 
@@ -880,7 +882,7 @@ void MyQTextEdit::localInsert(int index, QChar value) {
         }
     }
 
-    Symbol mysym{value, _siteId, _counter, myfract};
+    Symbol mysym{value, _siteId, _counter, myfract, charFormat};
     _symbols.insert(std::next(_symbols.begin(), index), mysym);
 
     //_server.send(Message('i', mysym, _siteId));
