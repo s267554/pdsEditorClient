@@ -76,7 +76,12 @@ public:
     QString nick;
     QColor color;
     int curs;
+    QImage icon; // controllare il tipo
 };
+
+//nuova idea di messaggio beside NotifyCursor e Message
+// messaggio consiste nella classe User
+// ???viene inviato al momento dell aconnessione al server insieme ad identificazione o quando lo si modifica(nick, icona..)???
 
 class NotifyCursor{
 public:
@@ -128,9 +133,6 @@ public slots:
     void CatchChangeSignal(int pos, int rem, int add); // move to private?
 
     void myCursorPositionChanged();
-private:
-
-
 };
 
 /* MY ADD END */
