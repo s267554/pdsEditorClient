@@ -67,6 +67,10 @@ QT_END_NAMESPACE
 #include <QTextCursor>
 #include <QTextEdit>
 
+//bisognerà ripensare a dove e se riposizionare strutture dati quali _users
+//          evenutalmente usare puntatori alle strutture
+//          per permettere a futuri widget quali la sidebar di accedervi
+
 
 /* MY ADD START */
 class User{
@@ -81,6 +85,7 @@ public:
 
 //nuova idea di messaggio beside NotifyCursor e Message
 // messaggio consiste nella classe User
+// ricevuto dal server quando si connette nuovo utente
 // ???viene inviato al momento dell aconnessione al server insieme ad identificazione o quando lo si modifica(nick, icona..)???
 
 class NotifyCursor{
