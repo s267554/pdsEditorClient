@@ -71,11 +71,11 @@ QT_END_NAMESPACE
 /* MY ADD START */
 class User{
 public:
-    User(int u, QString n, QColor col, QTextCursor tc): uid(u), nick(n), color(col), curs(tc){}
+    User(int u, QString n, QColor col, int tc): uid(u), nick(n), color(col), curs(tc){}
     int uid;                    // se faccio map<int, user> non serve, la uso come chiave
     QString nick;
     QColor color;
-    QTextCursor curs;
+    int curs;
 };
 
 class NotifyCursor{
@@ -116,6 +116,7 @@ private:
     int _siteId = 0;
     QMap<int, User> _users;
 public:
+    QMap<int, QTextCursor> _cursors;
     int getSiteId();
     QString to_string();
     void process(const Message &m);

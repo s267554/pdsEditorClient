@@ -823,9 +823,14 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 // per simulare comparsa cursore altrui
 /*              ATTENZIONE È UNA PROVA              */
     if(toPlainText()=="prova"){
-        User u(123, "nico", "red", textCursor());
+        User u(123, "nico", "red", 0);
         NotifyCursor n(2, 123);
+
         _users.insert(u.uid, u);
+        // insert method or something to initialize QTextcursor from User int position
+        _cursors.insert(u.uid, textCursor());
+
+
         process(n);
         update();
     }
@@ -900,7 +905,7 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
     QTextEdit::paintEvent(event);
     for(auto i: _users){
-        const QRect qRect = cursorRect(i.curs);
+        const QRect qRect = cursorRect(_cursors.find(i.uid).value());
         QPainter qPainter(viewport());
         qPainter.fillRect(qRect, i.color);
     }
@@ -911,8 +916,8 @@ void MyQTextEdit::process(const NotifyCursor &n) {
     // posso ricevere notifiche da "nuovi" utenti? TCP in order in teoria
     // in ongi caso il server dovrebbe inviarmi prima l'avviso di un nuovo utente collegato
 
-    auto q = _users.find(n.uid);
-    q->curs.setPosition(n.cursPos);
+    auto q = _cursors.find(n.uid);
+    q->setPosition(n.cursPos);
 
     //aggiorno la view
     update();
@@ -946,8 +951,8 @@ void MyQTextEdit::process(const Message& m) {
 
             _symbols.insert(_symbols.begin() + i, m.sym);
 
-            _users.find(m.genFrom)->curs.setPosition(i);
-            _users.find(m.genFrom)->curs.insertText(m.sym.c);
+            _cursors.find(m.genFrom)->setPosition(i);
+            _cursors.find(m.genFrom)->insertText(m.sym.c);
         }
             break;
         case 'e': {
@@ -957,9 +962,9 @@ void MyQTextEdit::process(const Message& m) {
 
                     _symbols.erase(it);
 
-                    _users.find(m.genFrom)->curs.setPosition(i);
+                    _cursors.find(m.genFrom)->setPosition(i);
                     // WARNING Sceglierne uno tra previous e questo
-                    _users.find(m.genFrom)->curs.deleteChar();
+                    _cursors.find(m.genFrom)->deleteChar();
 
                     break;
                 }
