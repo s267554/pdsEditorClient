@@ -791,6 +791,10 @@ void TextEdit::alignmentChanged(Qt::Alignment a)
 
 MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
+    //inizializzazione strutture dati prima di collegare o dopo ??????????????????????'
+
+
+
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
     connect(this, &QTextEdit::cursorPositionChanged,
@@ -832,6 +836,7 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
         // insert method or something to initialize QTextcursor from User int position
         _cursors.insert(u.uid, textCursor());
 
+        _symbols.at(1).siteid=123; // assegno carattere ad indice 1 a nico
 
         process(n);
         update();
@@ -906,11 +911,36 @@ TextEdit::SharedEditor(NetworkServer &_server) : _server(_server) {
 void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
     QTextEdit::paintEvent(event);
-    for(auto i: _users){
-        const QRect qRect = cursorRect(_cursors.find(i.uid).value());
+
+    for(auto u: _users){
+        const QRect qRect = cursorRect(_cursors.find(u.uid).value());
         QPainter qPainter(viewport());
-        qPainter.fillRect(qRect, i.color);
+        qPainter.fillRect(qRect, u.color);
     }
+
+    QTextCursor cursor(document());
+
+    // in futuro si può migliorare il ciclo
+    int pos = 0;
+    for(auto s : _symbols){
+        cursor.setPosition(pos);
+        if(s.siteid!=_siteId){ // non voglio evidenziare la mia roba
+
+            const QRect qRect1 = cursorRect(cursor);
+            cursor.setPosition(pos+1, QTextCursor::KeepAnchor);
+            const QRect qRect2 = cursorRect(cursor);
+
+            QRect qRectSum(qRect1.topLeft(), qRect2.bottomRight());
+            QPainter qPainter(viewport());
+            qPainter.setCompositionMode(QPainter::CompositionMode_Darken); //rimane comunque una paraculata
+
+            qPainter.fillRect(qRectSum, _users.find(s.siteid).value().color);
+
+        }
+        cursor.clearSelection();
+        pos++;
+    }
+
 }
 
 void MyQTextEdit::process(const NotifyCursor &n) {
