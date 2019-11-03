@@ -792,8 +792,11 @@ void TextEdit::alignmentChanged(Qt::Alignment a)
 MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
     //inizializzazione strutture dati prima di collegare o dopo ??????????????????????'
+    in.setDevice(tcpSocket);
+    in.setVersion(QDataStream::Qt_4_0);
 
-
+    connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
+    //connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error);
 
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
@@ -804,6 +807,44 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
 // se tolgo questo non ho la vtable STUDIA!!!
 MyQTextEdit::~MyQTextEdit(){}
+
+
+// template per [de]serializzare std::vector di tipo T
+template<class T>
+QDataStream &operator<<(QDataStream& stream, const std::vector<T>& val){
+    stream << static_cast<quint32>(val.size());
+    for(auto& singleVal : val)
+    stream << singleVal;
+    return stream;
+}
+
+template<class T>
+QDataStream &operator>>(QDataStream& stream, std::vector<T>& val){
+    quint32 vecSize;
+    val.clear();
+    stream >> vecSize;
+    val.reserve(vecSize);
+    T tempVal;
+    while(vecSize--){
+        stream >> tempVal;
+        val.push_back(tempVal);
+        }
+    return stream;
+}
+
+QDataStream &operator<<(QDataStream& out, const Symbol& sen){
+    return out << sen.c << sen.count << sen.fract << sen.format << sen.siteid;
+}
+QDataStream &operator>>(QDataStream& in, Symbol& rec){
+    return in >> rec.c >> rec.count >> rec.fract >> rec.format >> rec.siteid;
+}
+
+QDataStream &operator<<(QDataStream& out, const Message& sen){
+    return out << sen.sym << sen.mType << sen.genFrom;
+}
+QDataStream &operator>>(QDataStream& in, Message& rec){
+    return in >> rec.sym >> rec.mType >> rec.genFrom;
+}
 
 
 void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
@@ -1016,6 +1057,21 @@ void MyQTextEdit::process(const Message& m) {
             this, &MyQTextEdit::myCursorPositionChanged);
 
 }
+
+void MyQTextEdit::readMessage()
+{
+    in.startTransaction();
+
+    Message msg;
+    in >> msg;
+
+    if (!in.commitTransaction())
+        return;
+
+    process(msg);
+
+}
+
 
 // fine
 // probabilmente queste funzioni non servono più

@@ -54,6 +54,7 @@
 #include <QMainWindow>
 #include <QMap>
 #include <QPointer>
+#include <QTcpSocket>
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -99,19 +100,25 @@ class Symbol {
 public:
     Symbol(QChar i, int i1, int i2, std::vector<int>& vector, QTextCharFormat qtcf):
         c(i), siteid(i1), count(i2), fract(vector), format(qtcf){}
-    QChar c;
-    int siteid;
-    int count;
-    std::vector<int> fract;
-    QTextCharFormat format;         // ANCORA DA IMPLEMENTARE, probabilmente la property alignment sarà dura
+    Symbol(){
+
+    }
+    QChar c = 0;
+    int siteid = 0;
+    int count = 0;
+    std::vector<int> fract = {};
+    QTextCharFormat format = QTextCharFormat();         // ANCORA DA IMPLEMENTARE, probabilmente la property alignment sarà dura
 };
 
 class Message {
 public:
     Message(char i, Symbol& pSymbol, int i1): mType(i), sym(pSymbol), genFrom(i1){}
-    int mType;
+    Message(){
+        sym = Symbol();
+    }
+    int mType = 0;
     Symbol sym;
-    int genFrom;
+    int genFrom = 0;
 
 };
 
@@ -138,12 +145,12 @@ private:
     int _counter = 0;
 public slots:
     void CatchChangeSignal(int pos, int rem, int add); // move to private?
-
+    void readMessage();
     void myCursorPositionChanged();
 
 // last hot stuff
 public:
-
+    QTcpSocket* tcpSocket = nullptr;
     QDataStream in;                         // sarà da collegare al socket
 
 };
