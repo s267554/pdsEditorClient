@@ -88,6 +88,7 @@
 
 // my include
 #include <QPainter>
+#include <QtNetwork>
 
 
 #ifdef Q_OS_MAC
@@ -791,30 +792,74 @@ void TextEdit::alignmentChanged(Qt::Alignment a)
 
 MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
-    //inizializzazione strutture dati prima di collegare o dopo ??????????????????????'
+    tcpSocket = new QTcpSocket;
+
     in.setDevice(tcpSocket);
     in.setVersion(QDataStream::Qt_4_0);
 
-    connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
-    //connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error);
+    tcpSocket->connectToHost(QHostAddress::LocalHost, 40123);
 
-    connect(document(), &QTextDocument::contentsChange,
-            this, &MyQTextEdit::CatchChangeSignal);
-    connect(this, &QTextEdit::cursorPositionChanged,
-            this, &MyQTextEdit::myCursorPositionChanged);
+    connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
+
+    // last add  TESTING STUFF IN A BAD WAY
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+
+    int op = 'l';
+    out << op;
+
+    QString username = "bella";
+    QString password = "ciao";
+
+    out << username;
+    out << password;
+
+    tcpSocket->write(block);
+
+    // end last add
 
 }
 
-// se tolgo questo non ho la vtable STUDIA!!!
-MyQTextEdit::~MyQTextEdit(){}
+MyQTextEdit::~MyQTextEdit(){}                   // se tolgo questo non ho la vtable STUDIA!!!
 
+/* qdatastream operators */
+QDataStream &operator<<(QDataStream& out, const Symbol& sen){
+    QVector<int> qvect;
+    return out << sen.c << sen.count << sen.format << sen.siteid << qvect.fromStdVector(sen.fract);
+}
+QDataStream &operator>>(QDataStream& in, Symbol& rec){
+    QVector<int> qvect;
+    in >> rec.c >> rec.count >> rec.format >> rec.siteid >> qvect;
+    rec.fract = qvect.toStdVector();
+    return in;
+}
 
-// template per [de]serializzare std::vector di tipo T
+QDataStream &operator<<(QDataStream& out, const Message& sen){
+    return out << sen.mType << sen.genFrom << sen.sym;
+}
+QDataStream &operator>>(QDataStream& in, Message& rec){
+    return in >> rec.mType >> rec.genFrom >> rec.sym ;
+}
+
+QDataStream &operator<<(QDataStream& out, const NotifyCursor& sen){
+    return out << sen.uid << sen.cursPos;
+}
+QDataStream &operator>>(QDataStream& in, NotifyCursor& rec){
+    return in >> rec.uid >> rec.cursPos;
+}
+
+QDataStream &operator<<(QDataStream& out, const User& sen){
+    return out << sen.uid << sen.icon << sen.nick << sen.color << sen.startCursor;
+}
+QDataStream &operator>>(QDataStream& in, User& rec){
+    return in >> rec.uid >> rec.icon >> rec.nick >> rec.color >> rec.startCursor;
+}
 template<class T>
 QDataStream &operator<<(QDataStream& stream, const std::vector<T>& val){
     stream << static_cast<quint32>(val.size());
     for(auto& singleVal : val)
-    stream << singleVal;
+        stream << singleVal;
     return stream;
 }
 
@@ -828,37 +873,23 @@ QDataStream &operator>>(QDataStream& stream, std::vector<T>& val){
     while(vecSize--){
         stream >> tempVal;
         val.push_back(tempVal);
-        }
+    }
     return stream;
 }
-
-QDataStream &operator<<(QDataStream& out, const Symbol& sen){
-    return out << sen.c << sen.count << sen.fract << sen.format << sen.siteid;
-}
-QDataStream &operator>>(QDataStream& in, Symbol& rec){
-    return in >> rec.c >> rec.count >> rec.fract >> rec.format >> rec.siteid;
-}
-
-QDataStream &operator<<(QDataStream& out, const Message& sen){
-    return out << sen.sym << sen.mType << sen.genFrom;
-}
-QDataStream &operator>>(QDataStream& in, Message& rec){
-    return in >> rec.sym >> rec.mType >> rec.genFrom;
-}
-
+/* -------------------- */
 
 void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
+
     if(rem != 0){
         // workaround brutto, ricontrollare
-        if(pos==0 && add!=0)
+        if(add != 0 && pos == 0)
             rem--;
         for(int i=0;i<rem;i++){
             localErase(pos);
         }
     }
-    if(add!=0){
-        // vedi sopra
-        if(pos==0 && rem!=0)
+    if(add != 0){
+        if(rem != 0 && pos == 0)
             add--;
         for(int i=0;i<add;i++){
             auto cursor = QTextCursor();
@@ -867,110 +898,129 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
         }
     }
 
-// per simulare comparsa cursore altrui
-/*              ATTENZIONE È UNA PROVA              */
-    if(toPlainText()=="prova"){
-        User u(123, "nico", "red", 0);
-        NotifyCursor n(2, 123);
-
-        _users.insert(u.uid, u);
-        // insert method or something to initialize QTextcursor from User int position
-        _cursors.insert(u.uid, textCursor());
-
-        _symbols.at(1).siteid=123; // assegno carattere ad indice 1 a nico
-
-        process(n);
-        update();
+    QString text;
+    for(auto s : _symbols){
+        text.append(s.c);
     }
-/*              FINE PROVA                          */
-
+    qDebug() << "after edit text is: " << text;
 }
 
 void MyQTextEdit::myCursorPositionChanged(){
 
     int mypos = textCursor().position();
     NotifyCursor notify(mypos, _siteId);
-//  _server.send(Message('i', mysym, _siteId));
+
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+
+    int op = 'c';
+    out << op;
+
+    out << NotifyCursor(mypos, _siteId);
+    tcpSocket->write(block);
 
 }
 
-void MyQTextEdit::localInsert(int index, QChar value, QTextCharFormat charFormat) {
-
-    std::vector<int> myfract;
-
-    if(_symbols.empty()){ // vuoto
-        myfract = {std::rand()};
-    }
-    else if(index==0){  //primo
-        myfract = _symbols.front().fract;
-        myfract.push_back(std::rand()-1);
-        _symbols.front().fract.push_back(myfract.back() + 1);
-    }
-    else if(_symbols.size() < index +1){ //ultimo
-        myfract = _symbols.back().fract;
-        myfract.back()++;
-    }
-    else{ //pinzato
-        auto before = _symbols.at(index-1);
-        auto after = _symbols.at(index);
-        myfract = before.fract;
-        int digit = 0;
-
-        while((before.fract.size() > digit) && (after.fract.size() > digit)){
-            if(after.fract.at(digit) - before.fract.at(digit) > 1){
-                myfract.push_back( (before.fract.at(digit) + after.fract.at(digit)) /2 );
-            }
-            else if(after.fract.at(digit) - before.fract.at(digit) == 1){
-                before.fract.push_back(0);
-                myfract.push_back(std::rand());
-            }
-            digit++;
+std::vector<int> MyQTextEdit::prefix(std::vector<int> id, int depth, int substitute)
+{
+    std::vector<int> idCopy = {};
+    for (int cpt = 0; cpt <= depth; cpt++) {
+        if (cpt < id.size()) {
+            idCopy.push_back(id.at(cpt));
+        }
+        else {
+            idCopy.push_back(substitute);
         }
     }
+    return idCopy;
+}
+
+void MyQTextEdit::localInsert(int index, QChar value, QTextCharFormat charFormat)
+{
+    std::vector<int> myfract = {};
+
+    auto before = _symbols.size() > index-1 ? _symbols.at(index-1).fract : std::vector<int>();
+    auto after = _symbols.size() > index ? _symbols.at(index).fract : std::vector<int>();
+
+    int depth = 0;
+    int interval = 0;
+
+    while (interval < 1) {
+        interval = prefix(after, depth, 1000).back() - prefix(before, depth, 0).back() - 1;
+        depth++;
+    }
+
+    int step = std::min(2, interval);
+
+    int addVal = QRandomGenerator::global()->bounded(0, step) + 1;
+    myfract = prefix(before, depth-1, 0);
+
+    myfract.back() += addVal;
 
     Symbol mysym{value, _siteId, _counter, myfract, charFormat};
     _symbols.insert(std::next(_symbols.begin(), index), mysym);
 
-    //_server.send(Message('i', mysym, _siteId));
+
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+
+    QVector<int> qvect;
+    qvect = qvect.fromStdVector(myfract);
+
+    auto mymsg = Message('i', mysym, _siteId);
+
+    int op = 'm';
+    out << op;
+    out << mymsg;
+    tcpSocket->write(block);
 
     _counter++;
+
 }
 
 void MyQTextEdit::localErase(int i) {
 
-    //_server.send(Message('e', _symbols.at(i), _siteId));
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+
+    int op = 'm';
+    out << op;
+
+    out << Message('e', _symbols.at(i), _siteId);
+    tcpSocket->write(block);
 
     _symbols.erase(_symbols.begin()+i);
-}
 
-/*
-TextEdit::SharedEditor(NetworkServer &_server) : _server(_server) {
-    _siteId = _server.connect(this);
 }
-*/
 
 void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
     QTextEdit::paintEvent(event);
 
     for(auto u: _users){
-        const QRect qRect = cursorRect(_cursors.find(u.uid).value());
-        QPainter qPainter(viewport());
-        qPainter.fillRect(qRect, u.color);
+        if(u.uid != _siteId){
+            const QRect qRect = cursorRect(_cursors.find(u.uid).value());
+            QPainter qPainter(viewport());
+            qPainter.fillRect(qRect, u.color);
+        }
     }
 
     QTextCursor cursor(document());
 
-    // in futuro si può migliorare il ciclo
     int pos = 0;
     for(auto s : _symbols){
         cursor.setPosition(pos);
-        if(s.siteid!=_siteId){ // non voglio evidenziare la mia roba
 
+        // IGNORE symbol written by ME and SPECIAL ones, look Qchar doc for 13
+        if(s.siteid!=_siteId && s.c.category() > 13 ) {
             const QRect qRect1 = cursorRect(cursor);
             cursor.setPosition(pos+1, QTextCursor::KeepAnchor);
             const QRect qRect2 = cursorRect(cursor);
 
+            // qt docs warns against using topleft and bottomright type of stuff
             QRect qRectSum(qRect1.topLeft(), qRect2.bottomRight());
             QPainter qPainter(viewport());
             qPainter.setCompositionMode(QPainter::CompositionMode_Darken); //rimane comunque una paraculata
@@ -984,52 +1034,105 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
 }
 
+void MyQTextEdit::process(const User &u) {
+
+    if(_users.contains(u.uid)) {
+        _users.erase(_users.find(u.uid));
+        _users.insert(u.uid, u);
+    }
+    else {
+        _users.insert(u.uid, u);
+        if(u.uid!=_siteId){
+            _cursors.insert(u.uid, textCursor());
+        }
+    }
+
+}
+
 void MyQTextEdit::process(const NotifyCursor &n) {
-    // DA RIVEDERE!!!
-    // posso ricevere notifiche da "nuovi" utenti? TCP in order in teoria
-    // in ongi caso il server dovrebbe inviarmi prima l'avviso di un nuovo utente collegato
 
     auto q = _cursors.find(n.uid);
     q->setPosition(n.cursPos);
 
-    //aggiorno la view
-    update();
 }
 
-// riscrivere anche qui gli algos
 void MyQTextEdit::process(const Message& m) {
 
     disconnect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
-    // overkill?? dovrebbero essere cursori NON principali
-    // non voglio notificare il server
     disconnect(this, &QTextEdit::cursorPositionChanged,
             this, &MyQTextEdit::myCursorPositionChanged);
 
     switch(m.mType) {
         case 'i': {
             int i;
-            bool out = false;
-            for (i = 0; i < _symbols.size() && !out; i++) {
-                auto curr = _symbols.at(i);
+            bool found = false;
+
+            for (i = 0; i < _symbols.size() && !found; i++) {
+                bool next = false;
+                auto curr = _symbols.at(i).fract;
                 int digit = 0;
-                while (curr.fract.size() > digit && !out) {
-                    if (curr.fract.at(digit) > m.sym.fract.at(digit)) {
-                        out = true;
-                        i--; // brutto rivedere il ciclo
+
+                while (!found && !next &&
+                            curr.size() > digit && m.sym.fract.size() > digit)
+                {
+                    if (curr.at(digit) > m.sym.fract.at(digit)) {
+                        found = true;
+                        i--;
+                    }
+                    if(curr.at(digit) < m.sym.fract.at(digit)){
+                        next = true;
                     }
                     digit++;
                 }
+
+                // until now vectors are equal
+                if(!found && !next) {
+                    // maybe one of the two vector continues
+                    if(curr.size() > digit) {
+                        if(curr.at(digit) > 0){
+                            found = true;
+                            i--;
+                        }
+                    }
+                    else if (m.sym.fract.size() > digit) {
+                        if(m.sym.fract.at(digit) == 0){
+                            found = true;
+                            i--;
+                        }
+                    }
+                    else {
+                        // identical fract, then I look at _site Id than at count
+                        if(_symbols.at(i).siteid > m.sym.siteid){
+                            found = true;
+                            i--;
+                        }
+                        else if(_symbols.at(i).siteid < m.sym.siteid){
+                            found = true;
+                        }
+                        else {
+                            if(_symbols.at(i).count > m.sym.count){
+                                found = true;
+                                i--;
+                            }
+                            else if(_symbols.at(i).count < m.sym.count){
+                                found = true;
+                            }
+                            // I shouldn't be here, it's the same symbol!!!!
+                        }
+                    }
+                }
+
             }
 
             _symbols.insert(_symbols.begin() + i, m.sym);
 
             _cursors.find(m.genFrom)->setPosition(i);
-            _cursors.find(m.genFrom)->insertText(m.sym.c);
+            _cursors.find(m.genFrom)->insertText(m.sym.c, m.sym.format);
         }
             break;
         case 'e': {
-        int i = 0;
+            int i = 0;
             for (auto it = _symbols.begin(); it != _symbols.end(); it++) {
                 if (it->siteid == m.sym.siteid && it->count == m.sym.count) {
 
@@ -1041,18 +1144,16 @@ void MyQTextEdit::process(const Message& m) {
 
                     break;
                 }
+                i++;
             }
-            i++;
+
         }
             break;
     }
 
 
-    // update foreign cursor view
-
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
-    //vedere sopra
     connect(this, &QTextEdit::cursorPositionChanged,
             this, &MyQTextEdit::myCursorPositionChanged);
 
@@ -1060,32 +1161,107 @@ void MyQTextEdit::process(const Message& m) {
 
 void MyQTextEdit::readMessage()
 {
-    in.startTransaction();
-
     Message msg;
-    in >> msg;
+    Symbol sym;
+    User usr;
+    NotifyCursor nfy;
 
-    if (!in.commitTransaction())
-        return;
+    quint32 uid;                // to be moved!!!!
+    int magic;
 
-    process(msg);
+
+    do {
+
+        in.startTransaction();
+        in >> magic;
+
+        switch(magic){
+        case 'c':
+            in >> nfy;
+            process(nfy);
+            break;
+        case 'm':
+            in >> msg;
+            process(msg);
+            break;
+        case 'u':
+            in >> usr;
+            process(usr);
+            break;
+        case 'd':
+            in >> uid;
+            _users.remove(uid);
+            break;
+        case 's':               // these are all to be moved in the login/file stage!!!!!
+        case 'l':               // these are RESPONSES to login or signup attempts
+            in >> uid;      //
+            if(uid !=0 ){
+                _siteId = uid;
+                in >> _files;
+
+                fakeOpenFile();    // WARNING TO BE REMOVED
+
+            }
+            else {
+                qDebug() << "operation '" << char(magic) << "' failed";
+
+                // fail to login/signup
+                // wrong user/pwd combo in case of login
+                // username already present in signup case
+            }
+            break;
+        case 't':
+            in >> _symbols;
+
+            insertSymbols();
+
+            connect(document(), &QTextDocument::contentsChange,
+                    this, &MyQTextEdit::CatchChangeSignal);
+            connect(this, &QTextEdit::cursorPositionChanged,
+                    this, &MyQTextEdit::myCursorPositionChanged);
+
+            break;
+        }
+    } while(in.commitTransaction());
 
 }
 
+void MyQTextEdit::insertSymbols(){
+    QTextCursor init(document());
 
-// fine
-// probabilmente queste funzioni non servono più
-// ricordarsi di sistemare le classi nell'header
-// ovvero lo scope di membri e funzioni ora fa schifo
-
-QString MyQTextEdit::to_string() {
-    QString ret;
-    for(auto s:_symbols){
-        ret.push_back(s.c);
+    init.beginEditBlock();
+    for(auto it = _symbols.begin(); it!=_symbols.end(); it++){
+        init.insertText(it->c, it->format);
     }
-    return ret;
+    init.endEditBlock();
 }
 
-int MyQTextEdit::getSiteId() {
-    return _siteId;
+/* start of fake functions */
+void MyQTextEdit::fakeNewFile(){
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+
+    int op = 'n';
+    out << op;
+
+    QString filename("fakedoc");
+
+    out << filename;
+    tcpSocket->write(block);
+
 }
+
+void MyQTextEdit::fakeOpenFile(){
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+
+    int op = 'o';
+    out << op;
+
+    out << _files.last();
+    tcpSocket->write(block);
+
+}
+/* end of mockup stuff */

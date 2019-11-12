@@ -65,46 +65,38 @@ class QMenu;
 class QPrinter;
 QT_END_NAMESPACE
 
+/* MY ADD START */
 #include <QTextCursor>
 #include <QTextEdit>
 
-//bisognerà ripensare a dove e se riposizionare strutture dati quali _users
-//          evenutalmente usare puntatori alle strutture
-//          per permettere a futuri widget quali la sidebar di accedervi
-
-
-/* MY ADD START */
 class User{
 public:
-    User(int u, QString n, QColor col, int tc): uid(u), nick(n), color(col), startCursor(tc){}
-    int uid;                    // se faccio map<int, user> non serve, la uso come chiave
-    QString nick;
-    QColor color;
-    int startCursor;
-    QImage icon; // controllare il tipo
+    User(quint32 u, QString n, QColor col, int tc): uid(u), nick(n), color(col), startCursor(tc){}
+    User(){}
+    quint32 uid = 0;                                // se faccio map<int, user> non serve, la uso come chiave
+    QString nick = "";
+    QColor color = QColor();
+    int startCursor = 0;
+    QImage icon =  QImage();                    // controllare il tipo
 };
-
-//nuova idea di messaggio beside NotifyCursor e Message
-// messaggio consiste nella classe User
-// ricevuto dal server quando si connette nuovo utente
-// ???viene inviato al momento dell aconnessione al server insieme ad identificazione o quando lo si modifica(nick, icona..)???
 
 class NotifyCursor{
 public:
-    NotifyCursor(int curs, int u): cursPos(curs), uid(u){}
-    int cursPos;
-    int uid;
+    NotifyCursor(int curs, quint32 u): cursPos(curs), uid(u){}
+    NotifyCursor(){}
+    int cursPos = 0;
+    quint32 uid = 0;
 };
 
 class Symbol {
 public:
-    Symbol(QChar i, int i1, int i2, std::vector<int>& vector, QTextCharFormat qtcf):
+    Symbol(QChar i, quint32 i1, int i2, std::vector<int>& vector, QTextCharFormat qtcf):
         c(i), siteid(i1), count(i2), fract(vector), format(qtcf){}
     Symbol(){
 
     }
     QChar c = 0;
-    int siteid = 0;
+    quint32 siteid = 0;
     int count = 0;
     std::vector<int> fract = {};
     QTextCharFormat format = QTextCharFormat();         // ANCORA DA IMPLEMENTARE, probabilmente la property alignment sarà dura
@@ -112,13 +104,13 @@ public:
 
 class Message {
 public:
-    Message(char i, Symbol& pSymbol, int i1): mType(i), sym(pSymbol), genFrom(i1){}
+    Message(char i, Symbol& pSymbol, quint32 i1): mType(i), sym(pSymbol), genFrom(i1){}
     Message(){
         sym = Symbol();
     }
     int mType = 0;
     Symbol sym;
-    int genFrom = 0;
+    quint32 genFrom = 0;
 
 };
 
@@ -131,20 +123,20 @@ public:
     void localInsert(int i, QChar i1, QTextCharFormat f);
     void localErase(int i);
 private:
-    //NetworkServer& _server ;
-    int _siteId = 0;
-    QMap<int, User> _users;
+    quint32 _siteId = 0;
+    QMap<quint32, User> _users;
 public:
-    QMap<int, QTextCursor> _cursors;
-    int getSiteId();
+    QMap<quint32, QTextCursor> _cursors;
+    quint32 getSiteId();
     QString to_string();
     void process(const Message &m);
     void process(const NotifyCursor &n);
 private:
     std::vector<Symbol> _symbols;
     int _counter = 0;
+
 public slots:
-    void CatchChangeSignal(int pos, int rem, int add); // move to private?
+    void CatchChangeSignal(int pos, int rem, int add);      // move to private?
     void readMessage();
     void myCursorPositionChanged();
 
@@ -152,7 +144,13 @@ public slots:
 public:
     QTcpSocket* tcpSocket = nullptr;
     QDataStream in;                         // sarà da collegare al socket
-
+    QDataStream out;                        // per ora non serive
+    void process(const User &u);
+    QStringList _files = {};
+    void fakeNewFile();                // warning to be removed!!!
+    void fakeOpenFile();                // likewise
+    void insertSymbols();
+    std::vector<int> prefix(std::vector<int>, int, int);
 };
 
 /* MY ADD END */
