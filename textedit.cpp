@@ -109,8 +109,7 @@ TextEdit::TextEdit(QWidget *parent)
     textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGE HERE
     connect(textEdit, &QTextEdit::currentCharFormatChanged,
             this, &TextEdit::currentCharFormatChanged);
-    connect(textEdit, &QTextEdit::cursorPositionChanged,
-            this, &TextEdit::cursorPositionChanged);
+    connect(textEdit, &QTextEdit::cursorPositionChanged,this, &TextEdit::cursorPositionChanged);
     setCentralWidget(textEdit);
 
     setToolButtonStyle(Qt::ToolButtonFollowStyle);
@@ -898,11 +897,11 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
         }
     }
 
-    QString text;
-    for(auto s : _symbols){
-        text.append(s.c);
-    }
-    qDebug() << "after edit text is: " << text;
+//    QString text;
+//    for(auto s : _symbols){
+//        text.append(s.c);
+//    }
+//    qDebug() << "after edit text is: " << text;
 }
 
 void MyQTextEdit::myCursorPositionChanged(){
@@ -1040,10 +1039,10 @@ void MyQTextEdit::process(const User &u) {
         _users.erase(_users.find(u.uid));
         _users.insert(u.uid, u);
     }
-    else {
+    else { 
         _users.insert(u.uid, u);
         if(u.uid!=_siteId){
-            _cursors.insert(u.uid, textCursor());
+            _cursors.insert(u.uid, QTextCursor());
         }
     }
 
@@ -1060,8 +1059,10 @@ void MyQTextEdit::process(const Message& m) {
 
     disconnect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
-    disconnect(this, &QTextEdit::cursorPositionChanged,
-            this, &MyQTextEdit::myCursorPositionChanged);
+//    disconnect(this, &QTextEdit::cursorPositionChanged,
+//            this, &MyQTextEdit::myCursorPositionChanged);
+
+    /* warning experimental mulit symbol process */
 
     switch(m.mType) {
         case 'i': {
@@ -1154,8 +1155,8 @@ void MyQTextEdit::process(const Message& m) {
 
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
-    connect(this, &QTextEdit::cursorPositionChanged,
-            this, &MyQTextEdit::myCursorPositionChanged);
+//    connect(this, &QTextEdit::cursorPositionChanged,
+//            this, &MyQTextEdit::myCursorPositionChanged);
 
 }
 
@@ -1217,8 +1218,8 @@ void MyQTextEdit::readMessage()
 
             connect(document(), &QTextDocument::contentsChange,
                     this, &MyQTextEdit::CatchChangeSignal);
-            connect(this, &QTextEdit::cursorPositionChanged,
-                    this, &MyQTextEdit::myCursorPositionChanged);
+//            connect(this, &QTextEdit::cursorPositionChanged,
+//                    this, &MyQTextEdit::myCursorPositionChanged);
 
             break;
         }
@@ -1235,6 +1236,7 @@ void MyQTextEdit::insertSymbols(){
     }
     init.endEditBlock();
 }
+
 
 /* start of fake functions */
 void MyQTextEdit::fakeNewFile(){

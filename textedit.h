@@ -112,6 +112,8 @@ public:
     Symbol sym;
     quint32 genFrom = 0;
 
+    /* EXPERIMENTAL */
+    QList<Symbol> symList;
 };
 
 class MyQTextEdit: public QTextEdit{
