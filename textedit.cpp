@@ -909,6 +909,7 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
     QDataStream out(&block, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_0);
 
+    qDebug("sending a message");
     out << 'm';
     out << Message(add, rem, _siteId, _add, _rem);
 
@@ -1222,8 +1223,13 @@ void MyQTextEdit::readMessage()
 
             insertSymbols();
 
-            connect(document(), &QTextDocument::contentsChange,
+            qDebug("Received symbols, CatchChangeSignal not connected yet");
+
+            if(in.commitTransaction()){
+                qDebug() << "Connecting CatchChangeSignal...";
+                connect(document(), &QTextDocument::contentsChange,
                     this, &MyQTextEdit::CatchChangeSignal);
+            }
 //            connect(this, &QTextEdit::cursorPositionChanged,
 //                    this, &MyQTextEdit::myCursorPositionChanged);
 

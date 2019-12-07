@@ -147,10 +147,10 @@ public slots:
 public:
     QTcpSocket* tcpSocket = nullptr;
     QDataStream in;                         // sarà da collegare al socket
-    QDataStream out;                        // per ora non serive
+    QDataStream out;                        // per ora non serve
     void process(const User &u);
     QStringList _files = {};
-    void fakeNewFile();                // warning to be removed!!!
+    void fakeNewFile();                // warning to be fixed!!!
     void fakeOpenFile();                // likewise
     void insertSymbols();
     std::vector<int> prefix(std::vector<int>, int, int);
