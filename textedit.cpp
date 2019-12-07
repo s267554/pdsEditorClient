@@ -1189,50 +1189,54 @@ void MyQTextEdit::readMessage()
 //            process(nfy);
 //            break;
         case 'm':
+            in.startTransaction();
             in >> msg;
-            process(msg);
+            if(in.commitTransaction())
+                process(msg);
             break;
         case 'u':
+            in.startTransaction();
             in >> usr;
-            process(usr);
+            if(in.commitTransaction())
+                process(usr);
             break;
         case 'd':
+            in.startTransaction();
             in >> uid;
-            _users.remove(uid);
+            if(in.commitTransaction())
+                _users.remove(uid);
             break;
         case 's':               // these are all to be moved in the login/file stage!!!!!
         case 'l':               // these are RESPONSES to login or signup attempts
-            in >> uid;      //
-            if(uid !=0 ){
-                _siteId = uid;
-                in >> _files;
+            in.startTransaction();
+            in >> uid;
+            if(in.commitTransaction()){
+                if(uid !=0 ){
+                    _siteId = uid;
+                    in >> _files;
 
-                fakeOpenFile();    // WARNING TO BE REMOVED
+                    fakeOpenFile();    // WARNING TO BE REMOVED
 
-            }
-            else {
-                qDebug() << "operation '" << char(magic) << "' failed";
+                }
+                else {
+                    qDebug() << "operation '" << char(magic) << "' failed";
 
-                // fail to login/signup
-                // wrong user/pwd combo in case of login
-                // username already present in signup case
+                    // fail to login/signup
+                    // wrong user/pwd combo in case of login
+                    // username already present in signup case
+                }
             }
             break;
         case 't':
+            in.startTransaction();
             in >> _symbols;
-
-            insertSymbols();
-
             qDebug("Received symbols, CatchChangeSignal not connected yet");
-
             if(in.commitTransaction()){
+                insertSymbols();
                 qDebug() << "Connecting CatchChangeSignal...";
                 connect(document(), &QTextDocument::contentsChange,
                     this, &MyQTextEdit::CatchChangeSignal);
             }
-//            connect(this, &QTextEdit::cursorPositionChanged,
-//                    this, &MyQTextEdit::myCursorPositionChanged);
-
             break;
         }
     } while(in.commitTransaction());
