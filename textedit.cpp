@@ -800,7 +800,6 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
     connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
 
-    // last add  TESTING STUFF IN A BAD WAY
     QByteArray block;
     QDataStream out(&block, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_0);
@@ -815,8 +814,6 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
     out << password;
 
     tcpSocket->write(block);
-
-    // end last add
 
 }
 
@@ -841,12 +838,12 @@ QDataStream &operator>>(QDataStream& in, Message& rec){
     return in >> rec.totAdd >> rec.totRem >> rec.genFrom >> rec.symToAdd >> rec.symToRem;
 }
 
-QDataStream &operator<<(QDataStream& out, const NotifyCursor& sen){
-    return out << sen.uid << sen.cursPos;
-}
-QDataStream &operator>>(QDataStream& in, NotifyCursor& rec){
-    return in >> rec.uid >> rec.cursPos;
-}
+//QDataStream &operator<<(QDataStream& out, const NotifyCursor& sen){
+//    return out << sen.uid << sen.cursPos;
+//}
+//QDataStream &operator>>(QDataStream& in, NotifyCursor& rec){
+//    return in >> rec.uid >> rec.cursPos;
+//}
 
 QDataStream &operator<<(QDataStream& out, const User& sen){
     return out << sen.uid << sen.icon << sen.nick << sen.color << sen.startCursor;
@@ -917,45 +914,47 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 
     tcpSocket->write(block);
 
-    QString textA;
-    for(auto s : _add){
-        textA.append(s.c);
-    }
+    // debugging purpose
+//    QString textA;
+//    for(auto s : _add){
+//        textA.append(s.c);
+//    }
 
-    QString textR;
-    for(auto s : _rem){
-        textR.append(s.c);
-    }
+//    QString textR;
+//    for(auto s : _rem){
+//        textR.append(s.c);
+//    }
 
-    QString fromT;
-    QString fromS;
+//    QString fromT;
+//    QString fromS;
 
-    for(auto s: _symbols)
-        fromS.append(s.c);
+//    for(auto s: _symbols)
+//        fromS.append(s.c);
 
-    fromT = document()->toRawText();
+//    fromT = document()->toRawText();
 
-    if(fromT != fromS)
-        qDebug() << "DIVERGENZA!! testo: " << fromT << "e simboli: " << fromS;
-
-}
-
-void MyQTextEdit::myCursorPositionChanged(){
-
-    int mypos = textCursor().position();
-    NotifyCursor notify(mypos, _siteId);
-
-    QByteArray block;
-    QDataStream out(&block, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_0);
-
-    int op = 'c';
-    out << op;
-
-    out << NotifyCursor(mypos, _siteId);
-    tcpSocket->write(block);
+//    if(fromT != fromS)
+//        qDebug() << "DIVERGENZA!! testo: " << fromT << "e simboli: " << fromS;
 
 }
+
+// feature not required, llok for other chunks to comment out
+//void MyQTextEdit::myCursorPositionChanged(){
+
+//    int mypos = textCursor().position();
+//    NotifyCursor notify(mypos, _siteId);
+
+//    QByteArray block;
+//    QDataStream out(&block, QIODevice::WriteOnly);
+//    out.setVersion(QDataStream::Qt_4_0);
+
+//    int op = 'c';
+//    out << op;
+
+//    out << NotifyCursor(mypos, _siteId);
+//    tcpSocket->write(block);
+
+//}
 
 std::vector<int> MyQTextEdit::prefix(std::vector<int> id, int depth, int substitute)
 {
@@ -1024,7 +1023,7 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
         cursor.setPosition(pos);
 
         // IGNORE symbol written by ME and SPECIAL ones, look Qchar doc for 13
-        if(s.siteid!=_siteId && !s.c.isSpace() ) {         //old filte: s.c.category() > 13
+        if(s.siteid!=_siteId && !s.c.isSpace() ) {         //old filter was "s.c.category() > 13"
             const QRect qRect1 = cursorRect(cursor);
             cursor.setPosition(pos+1, QTextCursor::KeepAnchor);
             const QRect qRect2 = cursorRect(cursor);
@@ -1058,12 +1057,13 @@ void MyQTextEdit::process(const User &u) {
 
 }
 
-void MyQTextEdit::process(const NotifyCursor &n) {
+// useless feature
+//void MyQTextEdit::process(const NotifyCursor &n) {
 
-    auto q = _cursors.find(n.uid);
-    q->setPosition(n.cursPos);
+//    auto q = _cursors.find(n.uid);
+//    q->setPosition(n.cursPos);
 
-}
+//}
 
 void MyQTextEdit::process(const Message& m) {
 
@@ -1170,7 +1170,7 @@ void MyQTextEdit::readMessage()
     Message msg;
     Symbol sym;
     User usr;
-    NotifyCursor nfy;
+//    NotifyCursor nfy;
 
     quint32 uid;                // to be moved!!!!
     int magic;
@@ -1182,10 +1182,11 @@ void MyQTextEdit::readMessage()
         in >> magic;
 
         switch(magic){
-        case 'c':
-            in >> nfy;
-            process(nfy);
-            break;
+        // cursor position update is now disabled, deemed useless
+//        case 'c':
+//            in >> nfy;
+//            process(nfy);
+//            break;
         case 'm':
             in >> msg;
             process(msg);

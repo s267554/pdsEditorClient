@@ -80,13 +80,14 @@ public:
     QImage icon =  QImage();                    // controllare il tipo
 };
 
-class NotifyCursor{
-public:
-    NotifyCursor(int curs, quint32 u): cursPos(curs), uid(u){}
-    NotifyCursor(){}
-    int cursPos = 0;
-    quint32 uid = 0;
-};
+/*                   useless                */
+//class NotifyCursor{
+//public:
+//    NotifyCursor(int curs, quint32 u): cursPos(curs), uid(u){}
+//    NotifyCursor(){}
+//    int cursPos = 0;
+//    quint32 uid = 0;
+//};
 
 class Symbol {
 public:
@@ -132,7 +133,7 @@ public:
     quint32 getSiteId();
     QString to_string();
     void process(const Message &m);
-    void process(const NotifyCursor &n);
+//    void process(const NotifyCursor &n);
 private:
     std::vector<Symbol> _symbols;
     int _counter = 0;
@@ -140,7 +141,7 @@ private:
 public slots:
     void CatchChangeSignal(int pos, int rem, int add);      // move to private?
     void readMessage();
-    void myCursorPositionChanged();
+//    void myCursorPositionChanged();
 
 // last hot stuff
 public:
