@@ -835,10 +835,10 @@ QDataStream &operator>>(QDataStream& in, Symbol& rec){
 }
 
 QDataStream &operator<<(QDataStream& out, const Message& sen){
-    return out << sen.mType << sen.genFrom << sen.sym;
+    return out << sen.totAdd << sen.totRem << sen.genFrom << sen.symToAdd << sen.symToRem;
 }
 QDataStream &operator>>(QDataStream& in, Message& rec){
-    return in >> rec.mType >> rec.genFrom >> rec.sym ;
+    return in >> rec.totAdd >> rec.totRem >> rec.genFrom >> rec.symToAdd >> rec.symToRem;
 }
 
 QDataStream &operator<<(QDataStream& out, const NotifyCursor& sen){
@@ -879,29 +879,65 @@ QDataStream &operator>>(QDataStream& stream, std::vector<T>& val){
 
 void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 
+    QList<Symbol> _add = {};
+    QList<Symbol> _rem = {};
+
     if(rem != 0){
-        // workaround brutto, ricontrollare
-        if(add != 0 && pos == 0)
-            rem--;
+
         for(int i=0;i<rem;i++){
-            localErase(pos);
+
+            if(_symbols.size() > 0) {
+                _rem.append( _symbols.at(pos) );
+
+                localErase(pos);
+            }
+            else if(add) add--;
         }
     }
     if(add != 0){
-        if(rem != 0 && pos == 0)
-            add--;
-        for(int i=0;i<add;i++){
-            auto cursor = QTextCursor();
-            cursor.setPosition(pos+i);
-            localInsert(pos+i, document()->characterAt(pos+i), cursor.charFormat());
+
+        auto supportCursor = QTextCursor(this->document());
+        for(int i=0; i<add; i++){
+
+            supportCursor.setPosition(pos+i);
+            supportCursor.movePosition(QTextCursor::NextCharacter);
+
+            localInsert(pos+i, document()->characterAt(pos+i), supportCursor.charFormat());
+
+            _add.append( _symbols.at(pos+i) );
         }
     }
 
-//    QString text;
-//    for(auto s : _symbols){
-//        text.append(s.c);
-//    }
-//    qDebug() << "after edit text is: " << text;
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_0);
+
+    out << 'm';
+    out << Message(add, rem, _siteId, _add, _rem);
+
+    tcpSocket->write(block);
+
+    QString textA;
+    for(auto s : _add){
+        textA.append(s.c);
+    }
+
+    QString textR;
+    for(auto s : _rem){
+        textR.append(s.c);
+    }
+
+    QString fromT;
+    QString fromS;
+
+    for(auto s: _symbols)
+        fromS.append(s.c);
+
+    fromT = document()->toRawText();
+
+    if(fromT != fromS)
+        qDebug() << "DIVERGENZA!! testo: " << fromT << "e simboli: " << fromS;
+
 }
 
 void MyQTextEdit::myCursorPositionChanged(){
@@ -960,36 +996,10 @@ void MyQTextEdit::localInsert(int index, QChar value, QTextCharFormat charFormat
     Symbol mysym{value, _siteId, _counter, myfract, charFormat};
     _symbols.insert(std::next(_symbols.begin(), index), mysym);
 
-
-    QByteArray block;
-    QDataStream out(&block, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_0);
-
-    QVector<int> qvect;
-    qvect = qvect.fromStdVector(myfract);
-
-    auto mymsg = Message('i', mysym, _siteId);
-
-    int op = 'm';
-    out << op;
-    out << mymsg;
-    tcpSocket->write(block);
-
     _counter++;
-
 }
 
 void MyQTextEdit::localErase(int i) {
-
-    QByteArray block;
-    QDataStream out(&block, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_0);
-
-    int op = 'm';
-    out << op;
-
-    out << Message('e', _symbols.at(i), _siteId);
-    tcpSocket->write(block);
 
     _symbols.erase(_symbols.begin()+i);
 
@@ -1014,7 +1024,7 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
         cursor.setPosition(pos);
 
         // IGNORE symbol written by ME and SPECIAL ones, look Qchar doc for 13
-        if(s.siteid!=_siteId && s.c.category() > 13 ) {
+        if(s.siteid!=_siteId && !s.c.isSpace() ) {         //old filte: s.c.category() > 13
             const QRect qRect1 = cursorRect(cursor);
             cursor.setPosition(pos+1, QTextCursor::KeepAnchor);
             const QRect qRect2 = cursorRect(cursor);
@@ -1042,7 +1052,7 @@ void MyQTextEdit::process(const User &u) {
     else { 
         _users.insert(u.uid, u);
         if(u.uid!=_siteId){
-            _cursors.insert(u.uid, QTextCursor());
+            _cursors.insert(u.uid, QTextCursor(this->document()));
         }
     }
 
@@ -1062,96 +1072,91 @@ void MyQTextEdit::process(const Message& m) {
 //    disconnect(this, &QTextEdit::cursorPositionChanged,
 //            this, &MyQTextEdit::myCursorPositionChanged);
 
-    /* warning experimental mulit symbol process */
+    _cursors.find(m.genFrom)->beginEditBlock();
 
-    switch(m.mType) {
-        case 'i': {
-            int i;
-            bool found = false;
+    for(auto mi = m.symToRem.begin(); mi != m.symToRem.end(); mi++){
+        int i = 0;
+        for (auto it = _symbols.begin(); it != _symbols.end(); it++) {
+            if (it->siteid == mi->siteid && it->count == mi->count) {
 
-            for (i = 0; i < _symbols.size() && !found; i++) {
-                bool next = false;
-                auto curr = _symbols.at(i).fract;
-                int digit = 0;
+                _symbols.erase(it);
 
-                while (!found && !next &&
-                            curr.size() > digit && m.sym.fract.size() > digit)
-                {
-                    if (curr.at(digit) > m.sym.fract.at(digit)) {
+                _cursors.find(m.genFrom)->setPosition(i);
+                _cursors.find(m.genFrom)->deleteChar();
+
+                break;
+            }
+            i++;
+        }
+    }
+
+    for(auto mi = m.symToAdd.begin(); mi != m.symToAdd.end(); mi++){
+        int i;
+        bool found = false;
+
+        for (i = 0; i < _symbols.size() && !found; i++) {
+            bool next = false;
+            auto curr = _symbols.at(i).fract;
+            int digit = 0;
+
+            while (!found && !next &&
+                        curr.size() > digit && mi->fract.size() > digit)
+            {
+                if (curr.at(digit) > mi->fract.at(digit)) {
+                    found = true;
+                    i--;
+                }
+                if(curr.at(digit) < mi->fract.at(digit)){
+                    next = true;
+                }
+                digit++;
+            }
+
+            // until now vectors are equal
+            if(!found && !next) {
+                // maybe one of the two vector continues
+                if(curr.size() > digit) {
+                    if(curr.at(digit) > 0){
                         found = true;
                         i--;
                     }
-                    if(curr.at(digit) < m.sym.fract.at(digit)){
-                        next = true;
-                    }
-                    digit++;
                 }
-
-                // until now vectors are equal
-                if(!found && !next) {
-                    // maybe one of the two vector continues
-                    if(curr.size() > digit) {
-                        if(curr.at(digit) > 0){
-                            found = true;
-                            i--;
-                        }
+                else if (mi->fract.size() > digit) {
+                    if(mi->fract.at(digit) == 0){
+                        found = true;
+                        i--;
                     }
-                    else if (m.sym.fract.size() > digit) {
-                        if(m.sym.fract.at(digit) == 0){
-                            found = true;
-                            i--;
-                        }
+                }
+                else {
+                    // identical fract, then I look at _site Id than at count
+                    if(_symbols.at(i).siteid > mi->siteid){
+                        found = true;
+                        i--;
+                    }
+                    else if(_symbols.at(i).siteid < mi->siteid){
+                        found = true;
                     }
                     else {
-                        // identical fract, then I look at _site Id than at count
-                        if(_symbols.at(i).siteid > m.sym.siteid){
+                        if(_symbols.at(i).count > mi->count){
                             found = true;
                             i--;
                         }
-                        else if(_symbols.at(i).siteid < m.sym.siteid){
+                        else if(_symbols.at(i).count < mi->count){
                             found = true;
                         }
-                        else {
-                            if(_symbols.at(i).count > m.sym.count){
-                                found = true;
-                                i--;
-                            }
-                            else if(_symbols.at(i).count < m.sym.count){
-                                found = true;
-                            }
-                            // I shouldn't be here, it's the same symbol!!!!
-                        }
+                        // I shouldn't be here, it's the same symbol!!!!
                     }
                 }
-
             }
-
-            _symbols.insert(_symbols.begin() + i, m.sym);
-
-            _cursors.find(m.genFrom)->setPosition(i);
-            _cursors.find(m.genFrom)->insertText(m.sym.c, m.sym.format);
         }
-            break;
-        case 'e': {
-            int i = 0;
-            for (auto it = _symbols.begin(); it != _symbols.end(); it++) {
-                if (it->siteid == m.sym.siteid && it->count == m.sym.count) {
 
-                    _symbols.erase(it);
+        _symbols.insert(_symbols.begin() + i, *mi);
 
-                    _cursors.find(m.genFrom)->setPosition(i);
-                    // WARNING Sceglierne uno tra previous e questo
-                    _cursors.find(m.genFrom)->deleteChar();
-
-                    break;
-                }
-                i++;
-            }
-
-        }
-            break;
+        _cursors.find(m.genFrom)->setPosition(i);
+        _cursors.find(m.genFrom)->insertText(mi->c, mi->format);
     }
 
+    _cursors.find(m.genFrom)->endEditBlock();
 
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);

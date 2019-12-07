@@ -99,21 +99,21 @@ public:
     quint32 siteid = 0;
     int count = 0;
     std::vector<int> fract = {};
-    QTextCharFormat format = QTextCharFormat();         // ANCORA DA IMPLEMENTARE, probabilmente la property alignment sarà dura
+    QTextCharFormat format;         // ANCORA DA IMPLEMENTARE, probabilmente la property alignment sarà dura
 };
 
 class Message {
 public:
-    Message(char i, Symbol& pSymbol, quint32 i1): mType(i), sym(pSymbol), genFrom(i1){}
-    Message(){
-        sym = Symbol();
-    }
-    int mType = 0;
-    Symbol sym;
+    Message(int totA, int totR, quint32 fromUid, QList<Symbol>& symAdd, QList<Symbol>& symRem):
+        totAdd(totA), totRem(totR), genFrom(fromUid), symToAdd(symAdd), symToRem(symRem){}
+    Message(){}
+    int totAdd = 0;
+    int totRem = 0;
     quint32 genFrom = 0;
 
-    /* EXPERIMENTAL */
-    QList<Symbol> symList;
+    QList<Symbol> symToAdd = {};
+    QList<Symbol> symToRem = {};
+
 };
 
 class MyQTextEdit: public QTextEdit{
