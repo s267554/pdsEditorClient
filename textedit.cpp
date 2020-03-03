@@ -838,12 +838,6 @@ QDataStream &operator>>(QDataStream& in, Message& rec){
     return in >> rec.totAdd >> rec.totRem >> rec.genFrom >> rec.symToAdd >> rec.symToRem;
 }
 
-//QDataStream &operator<<(QDataStream& out, const NotifyCursor& sen){
-//    return out << sen.uid << sen.cursPos;
-//}
-//QDataStream &operator>>(QDataStream& in, NotifyCursor& rec){
-//    return in >> rec.uid >> rec.cursPos;
-//}
 
 QDataStream &operator<<(QDataStream& out, const User& sen){
     return out << sen.uid << sen.icon << sen.nick << sen.color << sen.startCursor;
@@ -938,24 +932,6 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 //        qDebug() << "DIVERGENZA!! testo: " << fromT << "e simboli: " << fromS;
 
 }
-
-// feature not required, look for other chunks to comment out
-//void MyQTextEdit::myCursorPositionChanged(){
-
-//    int mypos = textCursor().position();
-//    NotifyCursor notify(mypos, _siteId);
-
-//    QByteArray block;
-//    QDataStream out(&block, QIODevice::WriteOnly);
-//    out.setVersion(QDataStream::Qt_4_0);
-
-//    int op = 'c';
-//    out << op;
-
-//    out << NotifyCursor(mypos, _siteId);
-//    tcpSocket->write(block);
-
-//}
 
 std::vector<int> MyQTextEdit::prefix(std::vector<int> id, int depth, int substitute)
 {
@@ -1058,39 +1034,50 @@ void MyQTextEdit::process(const User &u) {
 
 }
 
-// useless feature
-//void MyQTextEdit::process(const NotifyCursor &n) {
+int MyQTextEdit::fractcmp(std::vector<int> v1, std::vector<int> v2) {
+    int digit = 0;
+    int cmp;
 
-//    auto q = _cursors.find(n.uid);
-//    q->setPosition(n.cursPos);
+    while (v1.size() > digit && v2.size() > digit)
+    {
+        cmp = v1.at(digit) - v2.at(digit);
+        if(cmp!=0)
+            return cmp;
+        digit++;
+    }
 
-//}
+    // until now vectors are equal but one may continue
+    if(v1.size() > digit && v1.at(digit) > 0)
+            return 1;
+
+    if(v2.size() > digit && v2.at(digit) == 0)
+            return -1;
+
+    // exactly the same
+    return 0;
+}
 
 void MyQTextEdit::process(const Message& m) {
 
     disconnect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
-//    disconnect(this, &QTextEdit::cursorPositionChanged,
-//            this, &MyQTextEdit::myCursorPositionChanged);
 
     _cursors.find(m.genFrom)->beginEditBlock();
 
-    //vars for dichotomy search
     int lowbound;
     int upbound;
     int index;
-
+    Symbol curr;
 
     /* let's look for syms to erase */
     for(auto mi = m.symToRem.begin(); mi != m.symToRem.end(); mi++){
 
-        // dichotomy
         lowbound = 0;
         upbound = _symbols.size();
 
         while(lowbound < upbound){
             index = (upbound+lowbound) /2;
-            auto curr = _symbols.at(index);
+            curr = _symbols.at(index);
 
             /* to check if it's the sym I'm looking for siteid & count are enough */
             if (curr.siteid == mi->siteid && curr.count == mi->count) {
@@ -1103,144 +1090,43 @@ void MyQTextEdit::process(const Message& m) {
                 break;
             }
 
-            auto fract = curr.fract;
-            int digit = 0;
-            bool fract_over = false;
-
-            while (fract.size() > digit && mi->fract.size() > digit)
-            {
-                if (fract.at(digit) > mi->fract.at(digit)) {
-                    //go lower
-                    upbound = index;
-                    fract_over = true;
-                    break;
-                }
-                if(fract.at(digit) < mi->fract.at(digit)){
-                    //go upper
-                    lowbound = index;
-                    fract_over = true;
-                    break;
-                }
-                digit++;
-            }
-
-            if(!fract_over){
-                // until now vectors are equal
-                // maybe one of the two vector continues
-                if(fract.size() > digit) {
-                    if(fract.at(digit) > 0){
-                        //go lower
-                        upbound = index;
-                    }
-                }
-                else if (mi->fract.size() > digit) {
-                    if(mi->fract.at(digit) == 0){
-                        //go upper
-                        lowbound = index;
-                    }
-                }
-            }
-
+            if(fractcmp(curr.fract, mi->fract) > 0)
+                upbound = index;
+            else
+                lowbound = index;
         }
 
-
-//        i = 0;
-//        // classic version alternative to dich
-//        for (auto it = _symbols.begin(); it != _symbols.end(); it++) {
-
-//            /* to check if it's the sym I'm looking for siteid & count are enough */
-//            if (it->siteid == mi->siteid && it->count == mi->count) {
-
-//                _symbols.erase(it);
-
-//                _cursors.find(m.genFrom)->setPosition(i);
-//                _cursors.find(m.genFrom)->deleteChar();
-
-//                break;
-//            }
-
-
-//            i++;
-//        }
-
-
-
+        //then it was already removed
     }
 
     /* let's look for syms to add */
     for(auto mi = m.symToAdd.begin(); mi != m.symToAdd.end(); mi++){
-        int i;
-        bool found = false;
 
+        lowbound = 0;
+        upbound = _symbols.size();
 
-        for (i = 0; i < _symbols.size() && !found; i++) {
-            bool next = false;
-            auto curr = _symbols.at(i).fract;
-            int digit = 0;
+        while(lowbound<upbound){
 
-            while (!found && !next &&
-                        curr.size() > digit && mi->fract.size() > digit)
-            {
-                if (curr.at(digit) > mi->fract.at(digit)) {
-                    found = true;
-                    i--;
-                }
-                if(curr.at(digit) < mi->fract.at(digit)){
-                    next = true;
-                }
-                digit++;
-            }
+            index = (upbound+lowbound) /2;
+            curr = _symbols.at(index);
 
-            // until now vectors are equal
-            if(!found && !next) {
-                // maybe one of the two vector continues
-                if(curr.size() > digit) {
-                    if(curr.at(digit) > 0){
-                        found = true;
-                        i--;
-                    }
-                }
-                else if (mi->fract.size() > digit) {
-                    if(mi->fract.at(digit) == 0){
-                        found = true;
-                        i--;
-                    }
-                }
-                else {
-                    // identical fract, then I look at _site Id than at count
-                    if(_symbols.at(i).siteid > mi->siteid){
-                        found = true;
-                        i--;
-                    }
-                    else if(_symbols.at(i).siteid < mi->siteid){
-                        found = true;
-                    }
-                    else {
-                        if(_symbols.at(i).count > mi->count){
-                            found = true;
-                            i--;
-                        }
-                        else if(_symbols.at(i).count < mi->count){
-                            found = true;
-                        }
-                        // I shouldn't be here, it's the same symbol!!!!
-                    }
-                }
-            }
+            if(fractcmp(curr.fract, mi->fract) > 0)
+                upbound = index;
+            else
+                lowbound = index+1;
         }
 
-        _symbols.insert(_symbols.begin() + i, *mi);
+        _symbols.insert(_symbols.begin() + upbound, *mi);
 
-        _cursors.find(m.genFrom)->setPosition(i);
+        _cursors.find(m.genFrom)->setPosition(upbound);
         _cursors.find(m.genFrom)->insertText(mi->c, mi->format);
+
     }
 
     _cursors.find(m.genFrom)->endEditBlock();
 
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
-//    connect(this, &QTextEdit::cursorPositionChanged,
-//            this, &MyQTextEdit::myCursorPositionChanged);
 
 }
 
@@ -1249,11 +1135,9 @@ void MyQTextEdit::readMessage()
     Message msg;
     Symbol sym;
     User usr;
-//    NotifyCursor nfy;
 
     quint32 uid;                // to be moved!!!!
     int magic;
-
 
     do {
 
@@ -1261,11 +1145,6 @@ void MyQTextEdit::readMessage()
         in >> magic;
 
         switch(magic){
-        // cursor position update is now disabled, deemed useless
-//        case 'c':
-//            in >> nfy;
-//            process(nfy);
-//            break;
         case 'm':
             in.startTransaction();
             in >> msg;

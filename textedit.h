@@ -80,15 +80,6 @@ public:
     QImage icon =  QImage();                    // controllare il tipo
 };
 
-/*                   useless                */
-//class NotifyCursor{
-//public:
-//    NotifyCursor(int curs, quint32 u): cursPos(curs), uid(u){}
-//    NotifyCursor(){}
-//    int cursPos = 0;
-//    quint32 uid = 0;
-//};
-
 class Symbol {
 public:
     Symbol(QChar i, quint32 i1, int i2, std::vector<int>& vector, QTextCharFormat qtcf):
@@ -125,6 +116,7 @@ public:
     void paintEvent(QPaintEvent *e);
     void localInsert(int i, QChar i1, QTextCharFormat f);
     void localErase(int i);
+    int fractcmp(std::vector<int>, std::vector<int>);
 private:
     quint32 _siteId = 0;
     QMap<quint32, User> _users;
@@ -133,7 +125,6 @@ public:
     quint32 getSiteId();
     QString to_string();
     void process(const Message &m);
-//    void process(const NotifyCursor &n);
 private:
     std::vector<Symbol> _symbols;
     int _counter = 0;
@@ -141,7 +132,6 @@ private:
 public slots:
     void CatchChangeSignal(int pos, int rem, int add);      // move to private?
     void readMessage();
-//    void myCursorPositionChanged();
 
 // last hot stuff
 public:
