@@ -939,7 +939,7 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 
 }
 
-// feature not required, llok for other chunks to comment out
+// feature not required, look for other chunks to comment out
 //void MyQTextEdit::myCursorPositionChanged(){
 
 //    int mypos = textCursor().position();
@@ -1075,25 +1075,103 @@ void MyQTextEdit::process(const Message& m) {
 
     _cursors.find(m.genFrom)->beginEditBlock();
 
+    //vars for dichotomy search
+    int lowbound;
+    int upbound;
+    int index;
+
+
+    /* let's look for syms to erase */
     for(auto mi = m.symToRem.begin(); mi != m.symToRem.end(); mi++){
-        int i = 0;
-        for (auto it = _symbols.begin(); it != _symbols.end(); it++) {
-            if (it->siteid == mi->siteid && it->count == mi->count) {
 
-                _symbols.erase(it);
+        // dichotomy
+        lowbound = 0;
+        upbound = _symbols.size();
 
-                _cursors.find(m.genFrom)->setPosition(i);
+        while(lowbound < upbound){
+            index = (upbound+lowbound) /2;
+            auto curr = _symbols.at(index);
+
+            /* to check if it's the sym I'm looking for siteid & count are enough */
+            if (curr.siteid == mi->siteid && curr.count == mi->count) {
+
+                _symbols.erase(_symbols.begin()+index);
+
+                _cursors.find(m.genFrom)->setPosition(index);
                 _cursors.find(m.genFrom)->deleteChar();
 
                 break;
             }
-            i++;
+
+            auto fract = curr.fract;
+            int digit = 0;
+            bool fract_over = false;
+
+            while (fract.size() > digit && mi->fract.size() > digit)
+            {
+                if (fract.at(digit) > mi->fract.at(digit)) {
+                    //go lower
+                    upbound = index;
+                    fract_over = true;
+                    break;
+                }
+                if(fract.at(digit) < mi->fract.at(digit)){
+                    //go upper
+                    lowbound = index;
+                    fract_over = true;
+                    break;
+                }
+                digit++;
+            }
+
+            if(!fract_over){
+                // until now vectors are equal
+                // maybe one of the two vector continues
+                if(fract.size() > digit) {
+                    if(fract.at(digit) > 0){
+                        //go lower
+                        upbound = index;
+                    }
+                }
+                else if (mi->fract.size() > digit) {
+                    if(mi->fract.at(digit) == 0){
+                        //go upper
+                        lowbound = index;
+                    }
+                }
+            }
+
         }
+
+
+//        i = 0;
+//        // classic version alternative to dich
+//        for (auto it = _symbols.begin(); it != _symbols.end(); it++) {
+
+//            /* to check if it's the sym I'm looking for siteid & count are enough */
+//            if (it->siteid == mi->siteid && it->count == mi->count) {
+
+//                _symbols.erase(it);
+
+//                _cursors.find(m.genFrom)->setPosition(i);
+//                _cursors.find(m.genFrom)->deleteChar();
+
+//                break;
+//            }
+
+
+//            i++;
+//        }
+
+
+
     }
 
+    /* let's look for syms to add */
     for(auto mi = m.symToAdd.begin(); mi != m.symToAdd.end(); mi++){
         int i;
         bool found = false;
+
 
         for (i = 0; i < _symbols.size() && !found; i++) {
             bool next = false;
