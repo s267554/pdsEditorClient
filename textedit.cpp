@@ -807,7 +807,7 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
     int op = 'l';
     out << op;
 
-    QString username = "bella";
+    QString username = "brutta";
     QString password = "ciao";
 
     out << username;
@@ -870,6 +870,8 @@ QDataStream &operator>>(QDataStream& stream, std::vector<T>& val){
 
 void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 
+
+
     QList<Symbol> _add = {};
     QList<Symbol> _rem = {};
 
@@ -887,15 +889,39 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
     }
     if(add != 0){
 
+        // disconnect necessaria(?) perchè faccio modifiche sul testo dentro lo slot di textchanged
+        disconnect(document(), &QTextDocument::contentsChange,
+                this, &MyQTextEdit::CatchChangeSignal);
+
         auto supportCursor = QTextCursor(this->document());
         for(int i=0; i<add; i++){
 
+            // tolgo il background cancellano e reinserendo, ma quanto costa?
+            // non dovrebbe costare di più perchè tanto già faccio un insert per ogni simbolo con il proprio formato
+
+            // tra tutte queste istruzioni si può risparmiare sicuro qualcosa ma non vale ancora la pena
             supportCursor.setPosition(pos+i);
-            supportCursor.movePosition(QTextCursor::NextCharacter);
+            supportCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor);
 
             localInsert(pos+i, document()->characterAt(pos+i), supportCursor.charFormat());
+
+            QString copy = supportCursor.selectedText();
+
+            QTextCharFormat newFormat(supportCursor.charFormat());
+            newFormat.clearBackground();
+
+            supportCursor.removeSelectedText();
+
+            supportCursor.setPosition(pos+i);
+            supportCursor.insertText(copy, newFormat);
+
         }
+
+        connect(document(), &QTextDocument::contentsChange,
+                this, &MyQTextEdit::CatchChangeSignal);
+
         _add = {_symbols.begin()+pos, _symbols.begin()+pos+add};
+
     }
 
     QByteArray block;
@@ -1080,8 +1106,10 @@ void MyQTextEdit::process(const Message& m) {
 
         _cursors.find(m.genFrom)->setPosition(upbound);
         _cursors.find(m.genFrom)->insertText(mi->c, newFormat);
-
     }
+
+    // important fix DOESNT WORK
+//    _cursors.find(m.genFrom)->setCharFormat(m.symToAdd.back().format);
 
     _cursors.find(m.genFrom)->endEditBlock();
 
