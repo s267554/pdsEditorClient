@@ -873,17 +873,17 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
     QList<Symbol> _add = {};
     QList<Symbol> _rem = {};
 
+    std::vector<Symbol> _remNew;
+
     if(rem != 0){
-
-        for(int i=0;i<rem;i++){
-
-            if(_symbols.size() > 0) {
-                _rem.append( _symbols.at(pos) );
-
-                localErase(pos);
-            }
-            else if(add) add--;
+        if(rem > _symbols.size()){
+            if(add)
+                add -= rem - _symbols.size();
+            rem = _symbols.size();
         }
+        _rem = {_symbols.begin()+pos, _symbols.begin()+pos+rem};
+        _symbols.erase(_symbols.begin()+pos, _symbols.begin()+pos+rem);
+
     }
     if(add != 0){
 
@@ -894,9 +894,8 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
             supportCursor.movePosition(QTextCursor::NextCharacter);
 
             localInsert(pos+i, document()->characterAt(pos+i), supportCursor.charFormat());
-
-            _add.append( _symbols.at(pos+i) );
         }
+        _add = {_symbols.begin()+pos, _symbols.begin()+pos+add};
     }
 
     QByteArray block;
@@ -977,6 +976,7 @@ void MyQTextEdit::localInsert(int index, QChar value, QTextCharFormat charFormat
 
 void MyQTextEdit::localErase(int i) {
 
+    // old one
     _symbols.erase(_symbols.begin()+i);
 
 }
