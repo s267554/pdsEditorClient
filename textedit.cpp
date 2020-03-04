@@ -907,29 +907,6 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
     out << Message(add, rem, _siteId, _add, _rem);
 
     tcpSocket->write(block);
-
-    // debugging purpose
-//    QString textA;
-//    for(auto s : _add){
-//        textA.append(s.c);
-//    }
-
-//    QString textR;
-//    for(auto s : _rem){
-//        textR.append(s.c);
-//    }
-
-//    QString fromT;
-//    QString fromS;
-
-//    for(auto s: _symbols)
-//        fromS.append(s.c);
-
-//    fromT = document()->toRawText();
-
-//    if(fromT != fromS)
-//        qDebug() << "DIVERGENZA!! testo: " << fromT << "e simboli: " << fromS;
-
 }
 
 std::vector<int> MyQTextEdit::prefix(std::vector<int> id, int depth, int substitute)
@@ -976,6 +953,7 @@ void MyQTextEdit::localInsert(int index, QChar value, QTextCharFormat charFormat
 
 void MyQTextEdit::localErase(int i) {
 
+    // this should be useless
     // old one
     _symbols.erase(_symbols.begin()+i);
 
@@ -991,30 +969,6 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
             QPainter qPainter(viewport());
             qPainter.fillRect(qRect, u.color);
         }
-    }
-
-    QTextCursor cursor(document());
-
-    int pos = 0;
-    for(auto s : _symbols){
-        cursor.setPosition(pos);
-
-        // IGNORE symbol written by ME and SPECIAL ones, look Qchar doc for 13
-        if(s.siteid!=_siteId && !s.c.isSpace() ) {         //old filter was "s.c.category() > 13"
-            const QRect qRect1 = cursorRect(cursor);
-            cursor.setPosition(pos+1, QTextCursor::KeepAnchor);
-            const QRect qRect2 = cursorRect(cursor);
-
-            // qt docs warns against using topleft and bottomright type of stuff
-            QRect qRectSum(qRect1.topLeft(), qRect2.bottomRight());
-            QPainter qPainter(viewport());
-            qPainter.setCompositionMode(QPainter::CompositionMode_Darken); //rimane comunque una paraculata
-
-            qPainter.fillRect(qRectSum, _users.find(s.siteid).value().color);
-
-        }
-        cursor.clearSelection();
-        pos++;
     }
 
 }
@@ -1120,8 +1074,12 @@ void MyQTextEdit::process(const Message& m) {
 
         _symbols.insert(_symbols.begin() + upbound, *mi);
 
+        // game changer
+        QTextCharFormat newFormat(mi->format);
+        newFormat.setBackground(_users.find(mi->siteid).value().color);
+
         _cursors.find(m.genFrom)->setPosition(upbound);
-        _cursors.find(m.genFrom)->insertText(mi->c, mi->format);
+        _cursors.find(m.genFrom)->insertText(mi->c, newFormat);
 
     }
 
@@ -1207,7 +1165,11 @@ void MyQTextEdit::insertSymbols(){
 
     init.beginEditBlock();
     for(auto it = _symbols.begin(); it!=_symbols.end(); it++){
-        init.insertText(it->c, it->format);
+
+        // you don't have the users yet, how can you find their color?
+        QTextCharFormat newFormat(it->format);
+        newFormat.setBackground(_users.find(it->siteid).value().color);
+        init.insertText(it->c, newFormat);
     }
     init.endEditBlock();
 }
