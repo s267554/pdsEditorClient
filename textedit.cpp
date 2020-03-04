@@ -1034,6 +1034,8 @@ void MyQTextEdit::process(const User &u) {
 
 }
 
+
+//TODO: include comparison with siteid and count to settle the match
 int MyQTextEdit::fractcmp(std::vector<int> v1, std::vector<int> v2) {
     int digit = 0;
     int cmp;
@@ -1093,7 +1095,7 @@ void MyQTextEdit::process(const Message& m) {
             if(fractcmp(curr.fract, mi->fract) > 0)
                 upbound = index;
             else
-                lowbound = index;
+                lowbound = index +1;
         }
 
         //then it was already removed
