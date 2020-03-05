@@ -807,7 +807,7 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
     int op = 'l';
     out << op;
 
-    QString username = "brutta";
+    QString username = "bella";
     QString password = "ciao";
 
     out << username;
@@ -889,36 +889,23 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
     }
     if(add != 0){
 
-        // disconnect necessaria(?) perchè faccio modifiche sul testo dentro lo slot di textchanged
-        disconnect(document(), &QTextDocument::contentsChange,
-                this, &MyQTextEdit::CatchChangeSignal);
-
         auto supportCursor = QTextCursor(this->document());
+
         for(int i=0; i<add; i++){
-
-            // tolgo il background cancellano e reinserendo, ma quanto costa?
-            // non dovrebbe costare di più perchè tanto già faccio un insert per ogni simbolo con il proprio formato
-
-            // tra tutte queste istruzioni si può risparmiare sicuro qualcosa ma non vale ancora la pena
             supportCursor.setPosition(pos+i);
-            supportCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor);
 
             localInsert(pos+i, document()->characterAt(pos+i), supportCursor.charFormat());
 
-            QString copy = supportCursor.selectedText();
-
-            QTextCharFormat newFormat(supportCursor.charFormat());
-            newFormat.clearBackground();
-
-            supportCursor.removeSelectedText();
-
-            supportCursor.setPosition(pos+i);
-            supportCursor.insertText(copy, newFormat);
-
+            supportCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor);
         }
 
-        connect(document(), &QTextDocument::contentsChange,
-                this, &MyQTextEdit::CatchChangeSignal);
+        supportCursor.setPosition(pos);
+        supportCursor.setPosition(pos+add, QTextCursor::KeepAnchor);
+
+        QTextCharFormat newFormat;
+        newFormat.setBackground(QColor("white"));
+
+        supportCursor.mergeCharFormat(newFormat);
 
         _add = {_symbols.begin()+pos, _symbols.begin()+pos+add};
 
