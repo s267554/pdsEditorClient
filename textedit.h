@@ -116,8 +116,10 @@ public:
     void paintEvent(QPaintEvent *e);
     void localInsert(int i, QChar i1, QTextCharFormat f);
     void localErase(int i);
-    int fractcmp(std::vector<int>, std::vector<int>);
+    int fractcmp(Symbol s1, Symbol s2);
 private:
+
+
     quint32 _siteId = 0;
     QMap<quint32, User> _users;
 public:
@@ -130,6 +132,12 @@ private:
     int _counter = 0;
 
 public slots:
+    /* changeBgcolor()
+     * function to change user's bgcolor both retro and pro - actively
+     * to be called by the client when selecting a color in the idebar(?)
+     * that is to be connect
+     */
+    void changeBgcolor(quint32, QColor);
     void CatchChangeSignal(int pos, int rem, int add);      // move to private?
     void readMessage();
 

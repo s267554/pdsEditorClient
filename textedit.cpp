@@ -903,7 +903,7 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
         supportCursor.setPosition(pos+add, QTextCursor::KeepAnchor);
 
         QTextCharFormat newFormat;
-        newFormat.setBackground(QColor("white"));
+        newFormat.setBackground(_users.value(_siteId).color);
 
         supportCursor.mergeCharFormat(newFormat);
 
@@ -920,6 +920,14 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
     out << Message(add, rem, _siteId, _add, _rem);
 
     tcpSocket->write(block);
+
+    // experimental stuff TO BE REMOVED
+
+    // seems to be working fine
+    if(document()->toPlainText().contains("Questo è il segnale", Qt::CaseInsensitive)){
+        changeBgcolor(_siteId, QColor("red"));
+    }
+
 }
 
 std::vector<int> MyQTextEdit::prefix(std::vector<int> id, int depth, int substitute)
@@ -1003,10 +1011,12 @@ void MyQTextEdit::process(const User &u) {
 
 
 //TODO: include comparison with siteid and count to settle the match
-int MyQTextEdit::fractcmp(std::vector<int> v1, std::vector<int> v2) {
+int MyQTextEdit::fractcmp(Symbol s1, Symbol s2) {
     int digit = 0;
     int cmp;
 
+    auto v1 = s1.fract;
+    auto v2 = s2.fract;
     while (v1.size() > digit && v2.size() > digit)
     {
         cmp = v1.at(digit) - v2.at(digit);
@@ -1022,8 +1032,16 @@ int MyQTextEdit::fractcmp(std::vector<int> v1, std::vector<int> v2) {
     if(v2.size() > digit && v2.at(digit) == 0)
             return -1;
 
+    cmp = s1.siteid - s2.siteid;
+    if(cmp!=0)
+        return cmp;
+
+    cmp = s1.count - s2.count;
+    if(cmp!=0)
+        return cmp;
+
     // exactly the same
-    return 0;
+    return cmp; // that is 0
 }
 
 void MyQTextEdit::process(const Message& m) {
@@ -1059,7 +1077,7 @@ void MyQTextEdit::process(const Message& m) {
                 break;
             }
 
-            if(fractcmp(curr.fract, mi->fract) > 0)
+            if(fractcmp(curr, *mi) > 0)
                 upbound = index;
             else
                 lowbound = index +1;
@@ -1079,7 +1097,7 @@ void MyQTextEdit::process(const Message& m) {
             index = (upbound+lowbound) /2;
             curr = _symbols.at(index);
 
-            if(fractcmp(curr.fract, mi->fract) > 0)
+            if(fractcmp(curr, *mi) > 0)
                 upbound = index;
             else
                 lowbound = index+1;
@@ -1102,6 +1120,33 @@ void MyQTextEdit::process(const Message& m) {
 
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
+
+}
+
+void MyQTextEdit::changeBgcolor(quint32 uid, QColor newColor){
+    if(!_users.contains(uid)){
+        return;
+    }
+    User u = _users.value(uid);
+
+    //proactive
+    u.color = newColor;
+
+    //retroactive
+    //redraw every char made by said user, got any better ideas?
+    // could be parallelized just in case
+    auto supportCursor = QTextCursor(this->document());
+    int pos = 0;
+    for(auto s = _symbols.begin();s != _symbols.end();s++, pos++){
+        if(s->siteid == uid){
+            supportCursor.setPosition(pos);
+            supportCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor);
+            QTextCharFormat newFormat(s->format);
+
+            newFormat.setBackground(u.color);
+            supportCursor.mergeCharFormat(newFormat);
+        }
+    }
 
 }
 
