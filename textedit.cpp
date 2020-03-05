@@ -106,7 +106,10 @@ TextEdit::TextEdit(QWidget *parent)
 #endif
     setWindowTitle(QCoreApplication::applicationName());
 
-    textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGE HERE
+    textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGES HERE
+    connect(textEdit, &MyQTextEdit::readyToShow,
+            this, &TextEdit::show);
+
     connect(textEdit, &QTextEdit::currentCharFormatChanged,
             this, &TextEdit::currentCharFormatChanged);
     connect(textEdit, &QTextEdit::cursorPositionChanged,this, &TextEdit::cursorPositionChanged);
@@ -924,9 +927,9 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
     // experimental stuff TO BE REMOVED
 
     // seems to be working fine
-    if(document()->toPlainText().contains("Questo è il segnale", Qt::CaseInsensitive)){
-        changeBgcolor(_siteId, QColor("red"));
-    }
+//    if(document()->toPlainText().contains("Questo è il segnale", Qt::CaseInsensitive)){
+//        changeBgcolor(_siteId, QColor("red"));
+//    }
 
 }
 
@@ -1150,6 +1153,7 @@ void MyQTextEdit::changeBgcolor(quint32 uid, QColor newColor){
 
 }
 
+
 void MyQTextEdit::readMessage()
 {
     Message msg;
@@ -1213,6 +1217,9 @@ void MyQTextEdit::readMessage()
                 qDebug() << "Connecting CatchChangeSignal...";
                 connect(document(), &QTextDocument::contentsChange,
                     this, &MyQTextEdit::CatchChangeSignal);
+
+                //experimental TO BE REMOVED or IS IT SO?
+                emit readyToShow();
             }
             break;
         }

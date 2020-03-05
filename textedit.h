@@ -152,6 +152,9 @@ public:
     void fakeOpenFile();                // likewise
     void insertSymbols();
     std::vector<int> prefix(std::vector<int>, int, int);
+signals:
+    void readyToShow();
+
 };
 
 /* MY ADD END */
