@@ -63,7 +63,7 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket)
     , pwdLineEdit(new QLineEdit)
     , openCombo(new QComboBox)
     , fileCombo(new QComboBox)
-    , getFortuneButton(new QPushButton(tr("Get Fortune")))
+    , getFortuneButton(new QPushButton(tr("Next")))
     , tcpSocket(parentSocket)
 {
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
@@ -113,10 +113,12 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket)
     getFortuneButton->setDefault(true);
     getFortuneButton->setEnabled(true);
 
+    loginCombo->addItems({"login", "signup"});
     loginCombo->setEnabled(false);
     userLineEdit->setEnabled(false);
     pwdLineEdit->setEnabled(false);
 
+    openCombo->addItems({"open", "new"});
     openCombo->setEnabled(false);
     fileCombo->setEnabled(false);
 
@@ -136,16 +138,8 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket)
     connect(getFortuneButton, &QAbstractButton::clicked,
             this, &Client::requestNewFortune);
     connect(quitButton, &QAbstractButton::clicked, this, &QWidget::close);
-    /*
-     * wait for simple connection acceptance, NOT something back (readyread)
-     */
 
     connect(tcpSocket, &QTcpSocket::connected, this, &Client::readFortune);
-
-    //connect(tcpSocket, &QIODevice::readyRead, this, &Client::readFortune);
-
-    //end of my current edits
-
 
     connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
             this, &Client::displayError);
@@ -184,8 +178,6 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket)
 
     mainLayout->addWidget(statusLabel, 7, 0, 1, 2);
     mainLayout->addWidget(buttonBox, 8, 0, 1, 2);
-//    mainLayout->addWidget(statusLabel, 2, 0, 1, 2);
-//    mainLayout->addWidget(buttonBox, 3, 0, 1, 2);
 
     setWindowTitle(QGuiApplication::applicationDisplayName());
     portLineEdit->setFocus();
@@ -295,13 +287,6 @@ void Client::sessionOpened()
 
 void Client::loginRead()
 {
-    // rivedere le transaction , il flow per intero
-    // insert timeout
-
-    //proceed to listen for uid
-
-    //uid==0 means fail
-
     int op;
     uid = 0;
 
@@ -326,6 +311,7 @@ void Client::loginRead()
 
             fileCombo->addItems(_files);
             fileCombo->setEnabled(true);
+            fileCombo->setEditable(true);
 
             disconnect(getFortuneButton, &QAbstractButton::clicked,
                     this, &Client::loginTry);
@@ -336,11 +322,7 @@ void Client::loginRead()
 
         }
         else {
-            qDebug() << "operation '" << "login" << "' failed";
-
-            // fail to login/signup
-            // wrong user/pwd combo in case of login
-            // username already present in signup case
+            //FAIL
         }
     }
 }
@@ -351,7 +333,25 @@ void Client::fileTry()
     QDataStream out(&block, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_0);
 
-    int op = 'o';
+    int op = 'z'; // UNinitialized value
+
+    bool present = _files.contains(fileCombo->currentText());
+    if(openCombo->currentText()=="open"){
+        if(!present){
+            QMessageBox::information(this, tr("Fortune Client"),
+                                     tr("No file found"));
+            return;
+        }
+        op = 'o';
+    }
+    else if(openCombo->currentText()=="new"){
+        if(present){
+            QMessageBox::information(this, tr("Fortune Client"),
+                                     tr("Name already used"));
+            return;
+        }
+        op = 'n';
+    }
     out << op;
 
     out << fileCombo->currentText();
@@ -376,7 +376,12 @@ void Client::loginTry()
     QDataStream out(&block, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_0);
 
-    int op = 'l';
+    int op = 'z'; // UNinitialized value
+
+    if(loginCombo->currentText()=="login")
+        op = 'l';
+    else if(loginCombo->currentText()=="signup")
+        op = 's';
     out << op;
 
     out << userLineEdit->text();

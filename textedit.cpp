@@ -907,13 +907,6 @@ void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 
     tcpSocket->write(block);
 
-    // experimental stuff TO BE REMOVED
-
-    // seems to be working fine
-//    if(document()->toPlainText().contains("Questo è il segnale", Qt::CaseInsensitive)){
-//        changeBgcolor(_siteId, QColor("red"));
-//    }
-
 }
 
 std::vector<int> MyQTextEdit::prefix(std::vector<int> id, int depth, int substitute)
@@ -1099,8 +1092,6 @@ void MyQTextEdit::process(const Message& m) {
         _cursors.find(m.genFrom)->insertText(mi->c, newFormat);
     }
 
-    // important fix DOESNT WORK
-//    _cursors.find(m.genFrom)->setCharFormat(m.symToAdd.back().format);
 
     _cursors.find(m.genFrom)->endEditBlock();
 
