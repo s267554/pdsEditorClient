@@ -64,12 +64,16 @@ class QTcpSocket;
 class QNetworkSession;
 QT_END_NAMESPACE
 
+
 class Client : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit Client(QWidget *parent = nullptr);
+    explicit Client(QWidget *parent = nullptr, QTcpSocket* socket = nullptr);
+
+signals:
+    void waitingDocu();
 
 private slots:
     void requestNewFortune();
@@ -77,18 +81,35 @@ private slots:
     void displayError(QAbstractSocket::SocketError socketError);
     void enableGetFortuneButton();
     void sessionOpened();
+    void loginTry();
+    void loginRead();
+    void fileTry();
+    void fileRead();
 
 private:
+
     QComboBox *hostCombo = nullptr;
     QLineEdit *portLineEdit = nullptr;
     QLabel *statusLabel = nullptr;
     QPushButton *getFortuneButton = nullptr;
-
     QTcpSocket *tcpSocket = nullptr;
+
     QDataStream in;
     QString currentFortune;
 
     QNetworkSession *networkSession = nullptr;
+
+    /* MY ADDS */
+    QComboBox *loginCombo = nullptr;
+    QLineEdit *userLineEdit = nullptr;
+    QLineEdit *pwdLineEdit = nullptr;
+
+    QComboBox *openCombo = nullptr;
+    QComboBox *fileCombo = nullptr;
+    /* END ADDS */
+
+    int uid;
+    QStringList _files = {};
 };
 
 #endif

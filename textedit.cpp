@@ -85,6 +85,7 @@
 #endif
 
 #include "textedit.h"
+#include "client.h"
 
 // my include
 #include <QPainter>
@@ -107,8 +108,9 @@ TextEdit::TextEdit(QWidget *parent)
     setWindowTitle(QCoreApplication::applicationName());
 
     textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGES HERE
-    connect(textEdit, &MyQTextEdit::readyToShow,
-            this, &TextEdit::show);
+//    connect(textEdit, &MyQTextEdit::readyToShow,
+//            this, &TextEdit::show);
+// END OF CHANGES
 
     connect(textEdit, &QTextEdit::currentCharFormatChanged,
             this, &TextEdit::currentCharFormatChanged);
@@ -795,28 +797,9 @@ void TextEdit::alignmentChanged(Qt::Alignment a)
 MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
     tcpSocket = new QTcpSocket;
-
-    in.setDevice(tcpSocket);
-    in.setVersion(QDataStream::Qt_4_0);
-
-    tcpSocket->connectToHost(QHostAddress::LocalHost, 40123);
-
-    connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
-
-    QByteArray block;
-    QDataStream out(&block, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_0);
-
-    int op = 'l';
-    out << op;
-
-    QString username = "bella";
-    QString password = "ciao";
-
-    out << username;
-    out << password;
-
-    tcpSocket->write(block);
+    Client client(this, tcpSocket);
+    connect(&client, &Client::waitingDocu, this, &MyQTextEdit::docuReady);
+    _siteId = client.exec();
 
 }
 
@@ -1126,6 +1109,13 @@ void MyQTextEdit::process(const Message& m) {
 
 }
 
+void MyQTextEdit::docuReady()
+{
+    connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
+    in.setDevice(tcpSocket);
+    in.setVersion(QDataStream::Qt_4_0);
+}
+
 void MyQTextEdit::changeBgcolor(quint32 uid, QColor newColor){
     if(!_users.contains(uid)){
         return;
@@ -1156,6 +1146,7 @@ void MyQTextEdit::changeBgcolor(quint32 uid, QColor newColor){
 
 void MyQTextEdit::readMessage()
 {
+
     Message msg;
     Symbol sym;
     User usr;
@@ -1187,39 +1178,14 @@ void MyQTextEdit::readMessage()
             if(in.commitTransaction())
                 _users.remove(uid);
             break;
-        case 's':               // these are all to be moved in the login/file stage!!!!!
-        case 'l':               // these are RESPONSES to login or signup attempts
-            in.startTransaction();
-            in >> uid;
-            if(in.commitTransaction()){
-                if(uid !=0 ){
-                    _siteId = uid;
-                    in >> _files;
-
-                    fakeOpenFile();    // WARNING TO BE REMOVED
-
-                }
-                else {
-                    qDebug() << "operation '" << char(magic) << "' failed";
-
-                    // fail to login/signup
-                    // wrong user/pwd combo in case of login
-                    // username already present in signup case
-                }
-            }
-            break;
         case 't':
             in.startTransaction();
             in >> _symbols;
-            qDebug("Received symbols, CatchChangeSignal not connected yet");
+            qDebug() << "received " << _symbols.size() << " symbols";
             if(in.commitTransaction()){
                 insertSymbols();
-                qDebug() << "Connecting CatchChangeSignal...";
                 connect(document(), &QTextDocument::contentsChange,
                     this, &MyQTextEdit::CatchChangeSignal);
-
-                //experimental TO BE REMOVED or IS IT SO?
-                emit readyToShow();
             }
             break;
         }
@@ -1239,35 +1205,6 @@ void MyQTextEdit::insertSymbols(){
         init.insertText(it->c, newFormat);
     }
     init.endEditBlock();
+
+    qDebug() << document()->toPlainText();
 }
-
-
-/* start of fake functions */
-void MyQTextEdit::fakeNewFile(){
-    QByteArray block;
-    QDataStream out(&block, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_0);
-
-    int op = 'n';
-    out << op;
-
-    QString filename("fakedoc");
-
-    out << filename;
-    tcpSocket->write(block);
-
-}
-
-void MyQTextEdit::fakeOpenFile(){
-    QByteArray block;
-    QDataStream out(&block, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_0);
-
-    int op = 'o';
-    out << op;
-
-    out << _files.last();
-    tcpSocket->write(block);
-
-}
-/* end of mockup stuff */

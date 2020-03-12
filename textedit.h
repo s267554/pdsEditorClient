@@ -134,9 +134,10 @@ private:
 public slots:
     /* changeBgcolor()
      * function to change user's bgcolor both retro and pro - actively
-     * to be called by the client when selecting a color in the idebar(?)
+     * to be called by the client when selecting a color in the sidebar(?)
      * that is to be connect
      */
+    void docuReady();
     void changeBgcolor(quint32, QColor);
     void CatchChangeSignal(int pos, int rem, int add);      // move to private?
     void readMessage();
