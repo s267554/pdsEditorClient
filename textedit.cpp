@@ -108,7 +108,12 @@ TextEdit::TextEdit(QWidget *parent)
     setWindowTitle(QCoreApplication::applicationName());
 
     textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGES HERE
-//    connect(textEdit, &MyQTextEdit::readyToShow,
+
+    //experimental
+    textEdit->setStyleSheet("QTextEdit { padding-left:10; padding-top:10; padding-bottom:10; padding-right:10}");
+
+
+    //    connect(textEdit, &MyQTextEdit::readyToShow,
 //            this, &TextEdit::show);
 // END OF CHANGES
 
@@ -419,18 +424,19 @@ bool TextEdit::load(const QString &f)
 
 bool TextEdit::maybeSave()
 {
-    if (!textEdit->document()->isModified())
-        return true;
+    // I commented it out!!!!!
+//    if (!textEdit->document()->isModified())
+//        return true;
 
-    const QMessageBox::StandardButton ret =
-        QMessageBox::warning(this, QCoreApplication::applicationName(),
-                             tr("The document has been modified.\n"
-                                "Do you want to save your changes?"),
-                             QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-    if (ret == QMessageBox::Save)
-        return fileSave();
-    else if (ret == QMessageBox::Cancel)
-        return false;
+//    const QMessageBox::StandardButton ret =
+//        QMessageBox::warning(this, QCoreApplication::applicationName(),
+//                             tr("The document has been modified.\n"
+//                                "Do you want to save your changes?"),
+//                             QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+//    if (ret == QMessageBox::Save)
+//        return fileSave();
+//    else if (ret == QMessageBox::Cancel)
+//        return false;
     return true;
 }
 
@@ -801,6 +807,8 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
     connect(&client, &Client::waitingDocu, this, &MyQTextEdit::docuReady);
     _siteId = client.exec();
 
+
+
 }
 
 MyQTextEdit::~MyQTextEdit(){}                   // se tolgo questo non ho la vtable STUDIA!!!
@@ -977,6 +985,13 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
     QTextEdit::paintEvent(event);
 
+    /* experimental     */
+
+    QPoint mouse = QCursor::pos();
+
+    /* end              */
+
+
     for(auto u: _users){
         if(u.uid != _siteId){
             const QRect qRect = cursorRect(_cursors.find(u.uid).value());
@@ -984,6 +999,16 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
             qPainter.fillRect(qRect, u.color);
         }
     }
+
+    // old one
+
+//    for(auto u: _users){
+//        if(u.uid != _siteId){
+//            const QRect qRect = cursorRect(_cursors.find(u.uid).value());
+//            QPainter qPainter(viewport());
+//            qPainter.fillRect(qRect, u.color);
+//        }
+//    }
 
 }
 
