@@ -857,6 +857,20 @@ QDataStream &operator>>(QDataStream& stream, std::vector<T>& val){
 void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 
 
+    /* experimental IT WORKS!!!! */
+    QTextDocument* doc = this->document();
+    QTextBlock currentBlock = doc->firstBlock();
+
+    while (currentBlock.isValid()) {
+
+    QTextCursor cursor(currentBlock);
+    QTextBlockFormat blockFormat = currentBlock.blockFormat();
+    blockFormat.setLineHeight(200, QTextBlockFormat::ProportionalHeight);
+    cursor.setBlockFormat(blockFormat);
+
+    currentBlock = currentBlock.next();
+    }
+    /* end          */
 
     QList<Symbol> _add = {};
     QList<Symbol> _rem = {};

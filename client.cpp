@@ -322,6 +322,7 @@ void Client::loginRead()
 
         }
         else {
+            qDebug() << "loginread failed: " << " op was" << (char) op;
             //FAIL
         }
     }
