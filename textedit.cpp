@@ -109,8 +109,8 @@ TextEdit::TextEdit(QWidget *parent)
 
     textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGES HERE
 
-    //experimental
-    textEdit->setStyleSheet("QTextEdit { padding-left:10; padding-top:10; padding-bottom:10; padding-right:10}");
+    //experimental shouldnt be needed
+    //textEdit->setStyleSheet("QTextEdit { padding-left:20; padding-top:20; padding-bottom:20; padding-right:20}");
 
 
     //    connect(textEdit, &MyQTextEdit::readyToShow,
@@ -864,6 +864,7 @@ QDataStream &operator>>(QDataStream& stream, std::vector<T>& val){
 
 void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 
+    // maybe it's better to achieve transparency when hovering over them cursors
 
     /* experimental IT WORKS!!!! */
     QTextDocument* doc = this->document();
@@ -997,6 +998,8 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
             const QRect qRect = cursorRect(_cursors.find(u.uid).value());
             QPainter qPainter(viewport());
             qPainter.fillRect(qRect, u.color);
+            qDebug() << u.nick;
+            qPainter.drawText(qRect.topLeft(), u.nick);
         }
     }
 
