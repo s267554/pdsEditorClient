@@ -864,23 +864,6 @@ QDataStream &operator>>(QDataStream& stream, std::vector<T>& val){
 
 void MyQTextEdit::CatchChangeSignal(int pos, int rem, int add){
 
-    // maybe it's better to achieve transparency when hovering over them cursors
-
-    /* experimental IT WORKS!!!! */
-    QTextDocument* doc = this->document();
-    QTextBlock currentBlock = doc->firstBlock();
-
-    while (currentBlock.isValid()) {
-
-    QTextCursor cursor(currentBlock);
-    QTextBlockFormat blockFormat = currentBlock.blockFormat();
-    blockFormat.setLineHeight(200, QTextBlockFormat::ProportionalHeight);
-    cursor.setBlockFormat(blockFormat);
-
-    currentBlock = currentBlock.next();
-    }
-    /* end          */
-
     QList<Symbol> _add = {};
     QList<Symbol> _rem = {};
 
@@ -1144,6 +1127,23 @@ void MyQTextEdit::process(const Message& m) {
 
 void MyQTextEdit::docuReady()
 {
+    // maybe it's better to achieve transparency when hovering over them cursors
+
+    /* experimental IT WORKS!!!! */
+    QTextDocument* doc = this->document();
+    QTextBlock currentBlock = doc->firstBlock();
+
+    while (currentBlock.isValid()) {
+
+    QTextCursor cursor(currentBlock);
+    QTextBlockFormat blockFormat = currentBlock.blockFormat();
+    blockFormat.setLineHeight(200, QTextBlockFormat::ProportionalHeight);
+    cursor.setBlockFormat(blockFormat);
+
+    currentBlock = currentBlock.next();
+    }
+    /* end          */
+
     connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
     in.setDevice(tcpSocket);
     in.setVersion(QDataStream::Qt_4_0);
