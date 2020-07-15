@@ -978,11 +978,29 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
     for(auto u: _users){
         if(u.uid != _siteId){
+
             const QRect qRect = cursorRect(_cursors.find(u.uid).value());
             QPainter qPainter(viewport());
             qPainter.fillRect(qRect, u.color);
-            qDebug() << u.nick;
-            qPainter.drawText(qRect.topLeft(), u.nick);
+
+            //qDebug() << u.nick;
+
+            QRect nickRect = qPainter.boundingRect(qRect, 0, u.nick);
+
+            // where to draw it?
+            if(viewport()->rect().top() < nickRect.top())
+                nickRect.moveTop(qRect.bottom());
+
+            if(viewport()->rect().right() < nickRect.right())
+                nickRect.moveRight(qRect.right());
+
+            qPainter.drawText(nickRect, u.nick);
+
+            QPen pen = qPainter.pen();
+            pen.setStyle(Qt::SolidLine);
+            qPainter.setPen(pen);
+            qPainter.drawRect(nickRect.adjusted(0, 0, -pen.width(), -pen.width()));
+
         }
     }
 
