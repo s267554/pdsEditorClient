@@ -109,14 +109,6 @@ TextEdit::TextEdit(QWidget *parent)
 
     textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGES HERE
 
-    //experimental shouldnt be needed
-    //textEdit->setStyleSheet("QTextEdit { padding-left:20; padding-top:20; padding-bottom:20; padding-right:20}");
-
-
-    //    connect(textEdit, &MyQTextEdit::readyToShow,
-//            this, &TextEdit::show);
-// END OF CHANGES
-
     connect(textEdit, &QTextEdit::currentCharFormatChanged,
             this, &TextEdit::currentCharFormatChanged);
     connect(textEdit, &QTextEdit::cursorPositionChanged,this, &TextEdit::cursorPositionChanged);
@@ -959,43 +951,40 @@ void MyQTextEdit::localInsert(int index, QChar value, QTextCharFormat charFormat
 
 void MyQTextEdit::localErase(int i) {
 
-    // this should be useless
-    // old one
     _symbols.erase(_symbols.begin()+i);
 
 }
 
 void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
+    //TODO: color users' nicks and paint them with the right composition mode
+
+    // To draw everything else
     QTextEdit::paintEvent(event);
 
-    /* experimental     */
-
-    QPoint mouse = QCursor::pos();
-
-    /* end              */
-
-
+    // for every foreign cursor, paint it and draw nick
     for(auto u: _users){
         if(u.uid != _siteId){
 
+            // paint User's cursor with its color
             const QRect qRect = cursorRect(_cursors.find(u.uid).value());
             QPainter qPainter(viewport());
             qPainter.fillRect(qRect, u.color);
 
-            //qDebug() << u.nick;
-
+            // get size of Rect that can contain User's nick
             QRect nickRect = qPainter.boundingRect(qRect, 0, u.nick);
 
-            // where to draw it?
+            // check if nickRect overflows the textedit view either upward or rightward
+            // then move it accordingly to keep it inside
             if(viewport()->rect().top() < nickRect.top())
                 nickRect.moveTop(qRect.bottom());
-
             if(viewport()->rect().right() < nickRect.right())
                 nickRect.moveRight(qRect.right());
 
+            // finally draw User's nick
             qPainter.drawText(nickRect, u.nick);
 
+            // border around nick to better visibility
             QPen pen = qPainter.pen();
             pen.setStyle(Qt::SolidLine);
             qPainter.setPen(pen);
@@ -1003,36 +992,19 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
         }
     }
-
-    // old one
-
-//    for(auto u: _users){
-//        if(u.uid != _siteId){
-//            const QRect qRect = cursorRect(_cursors.find(u.uid).value());
-//            QPainter qPainter(viewport());
-//            qPainter.fillRect(qRect, u.color);
-//        }
-//    }
-
 }
 
 void MyQTextEdit::process(const User &u) {
 
-    if(_users.contains(u.uid)) {
-        _users.erase(_users.find(u.uid));
-        _users.insert(u.uid, u);
-    }
-    else { 
-        _users.insert(u.uid, u);
-        if(u.uid!=_siteId){
-            _cursors.insert(u.uid, QTextCursor(this->document()));
-        }
-    }
+    // if User is not already present and it's not me then I have to create its Text Cursor
+    if(!_users.contains(u.uid) && u.uid!=_siteId)
+        _cursors.insert(u.uid, QTextCursor(this->document()));
+
+    // insert or replace new User
+    _users.insert(u.uid, u);
 
 }
 
-
-//TODO: include comparison with siteid and count to settle the match
 int MyQTextEdit::fractcmp(Symbol s1, Symbol s2) {
     int digit = 0;
     int cmp;
@@ -1049,21 +1021,18 @@ int MyQTextEdit::fractcmp(Symbol s1, Symbol s2) {
 
     // until now vectors are equal but one may continue
     if(v1.size() > digit && v1.at(digit) > 0)
-            return 1;
+        return 1;
 
     if(v2.size() > digit && v2.at(digit) == 0)
-            return -1;
+         return -1;
 
     cmp = s1.siteid - s2.siteid;
     if(cmp!=0)
         return cmp;
 
     cmp = s1.count - s2.count;
-    if(cmp!=0)
-        return cmp;
 
-    // exactly the same
-    return cmp; // that is 0
+    return cmp;
 }
 
 void MyQTextEdit::process(const Message& m) {
@@ -1145,22 +1114,18 @@ void MyQTextEdit::process(const Message& m) {
 
 void MyQTextEdit::docuReady()
 {
-    // maybe it's better to achieve transparency when hovering over them cursors
 
-    /* experimental IT WORKS!!!! */
     QTextDocument* doc = this->document();
     QTextBlock currentBlock = doc->firstBlock();
 
+    // to add space between text lines
     while (currentBlock.isValid()) {
-
-    QTextCursor cursor(currentBlock);
-    QTextBlockFormat blockFormat = currentBlock.blockFormat();
-    blockFormat.setLineHeight(200, QTextBlockFormat::ProportionalHeight);
-    cursor.setBlockFormat(blockFormat);
-
-    currentBlock = currentBlock.next();
+        QTextCursor cursor(currentBlock);
+        QTextBlockFormat blockFormat = currentBlock.blockFormat();
+        blockFormat.setLineHeight(200, QTextBlockFormat::ProportionalHeight);
+        cursor.setBlockFormat(blockFormat);
+        currentBlock = currentBlock.next();
     }
-    /* end          */
 
     connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
     in.setDevice(tcpSocket);
@@ -1168,16 +1133,18 @@ void MyQTextEdit::docuReady()
 }
 
 void MyQTextEdit::changeBgcolor(quint32 uid, QColor newColor){
+
     if(!_users.contains(uid)){
+        // cant change color of Users I dont know of
         return;
     }
     User u = _users.value(uid);
 
-    //proactive
+    // proactive
     u.color = newColor;
 
-    //retroactive
-    //redraw every char made by said user, got any better ideas?
+    // retroactive
+    // redraw every char made by said user, got any better ideas?
     // could be parallelized just in case
     auto supportCursor = QTextCursor(this->document());
     int pos = 0;
@@ -1202,37 +1169,33 @@ void MyQTextEdit::readMessage()
     Symbol sym;
     User usr;
 
-    quint32 uid;                // to be moved!!!!
-    int magic;
+    quint32 uid;
+    int op;
 
     do {
+        in.startTransaction();
+        in >> op;
 
         in.startTransaction();
-        in >> magic;
-
-        switch(magic){
+        switch(op){
         case 'm':
-            in.startTransaction();
             in >> msg;
             if(in.commitTransaction())
                 process(msg);
             break;
         case 'u':
-            in.startTransaction();
             in >> usr;
             if(in.commitTransaction())
                 process(usr);
             break;
         case 'd':
-            in.startTransaction();
             in >> uid;
             if(in.commitTransaction())
                 _users.remove(uid);
             break;
         case 't':
-            in.startTransaction();
             in >> _symbols;
-            qDebug() << "received " << _symbols.size() << " symbols";
+            qDebug() << "received #" << _symbols.size() << " symbols";
             if(in.commitTransaction()){
                 insertSymbols();
                 connect(document(), &QTextDocument::contentsChange,
@@ -1257,5 +1220,5 @@ void MyQTextEdit::insertSymbols(){
     }
     init.endEditBlock();
 
-    qDebug() << document()->toPlainText();
+    qDebug() << "document text received: " << document()->toPlainText();
 }
