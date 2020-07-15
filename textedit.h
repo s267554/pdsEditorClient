@@ -167,19 +167,19 @@ class TextEdit : public QMainWindow
 public:
     TextEdit(QWidget *parent = 0);
 
-    bool load(const QString &f);
+    //bool load(const QString &f);
 
 public slots:
-    void fileNew();
+    //void fileNew();
 protected:
     void virtual closeEvent(QCloseEvent *e) override;
 
 private slots:
-    void fileOpen();
-    bool fileSave();
-    bool fileSaveAs();
-    void filePrint();
-    void filePrintPreview();
+//    void fileOpen();
+//    bool fileSave();
+//    bool fileSaveAs();
+//    void filePrint();
+//    void filePrintPreview();
     void filePrintPdf();
 
     void textBold();
@@ -189,14 +189,14 @@ private slots:
     void textSize(const QString &p);
     void textStyle(int styleIndex);
     void textColor();
-    void textAlign(QAction *a);
+    //void textAlign(QAction *a);
 
     void currentCharFormatChanged(const QTextCharFormat &format);
     void cursorPositionChanged();
 
     void clipboardDataChanged();
     void about();
-    void printPreview(QPrinter *);
+    //void printPreview(QPrinter *);
 
 private:
     void setupFileActions();
@@ -208,17 +208,17 @@ private:
     void mergeFormatOnWordOrSelection(const QTextCharFormat &format);
     void fontChanged(const QFont &f);
     void colorChanged(const QColor &c);
-    void alignmentChanged(Qt::Alignment a);
+    //void alignmentChanged(Qt::Alignment a);
 
     QAction *actionSave;
     QAction *actionTextBold;
     QAction *actionTextUnderline;
     QAction *actionTextItalic;
     QAction *actionTextColor;
-    QAction *actionAlignLeft;
-    QAction *actionAlignCenter;
-    QAction *actionAlignRight;
-    QAction *actionAlignJustify;
+//    QAction *actionAlignLeft;
+//    QAction *actionAlignCenter;
+//    QAction *actionAlignRight;
+//    QAction *actionAlignJustify;
     QAction *actionUndo;
     QAction *actionRedo;
 #ifndef QT_NO_CLIPBOARD
