@@ -806,9 +806,9 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
     Client client(this, tcpSocket);
     connect(&client, &Client::waitingDocu, this, &MyQTextEdit::docuReady);
     _siteId = client.exec();
-
-
-
+    if(_siteId == 0) {
+        exit(0);
+    }
 }
 
 MyQTextEdit::~MyQTextEdit(){}                   // se tolgo questo non ho la vtable STUDIA!!!
