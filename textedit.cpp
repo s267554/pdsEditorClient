@@ -1181,8 +1181,6 @@ void MyQTextEdit::readMessage()
     do {
         in.startTransaction();
         in >> op;
-
-        in.startTransaction();
         switch(op){
         case 'm':
             in >> msg;
@@ -1208,8 +1206,12 @@ void MyQTextEdit::readMessage()
                     this, &MyQTextEdit::CatchChangeSignal);
             }
             break;
+        default:
+            in.abortTransaction();
         }
-    } while(in.commitTransaction());
+        if(in.Ok)
+            qDebug() << "received '" << char(op) << "' message";
+    } while(in.Ok);
 
 }
 
