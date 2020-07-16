@@ -1207,11 +1207,11 @@ void MyQTextEdit::readMessage()
             }
             break;
         default:
-            in.abortTransaction();
+            in.rollbackTransaction();
         }
-        if(in.Ok)
+        if(in.status() == QDataStream::Ok)
             qDebug() << "received '" << char(op) << "' message";
-    } while(in.Ok);
+    } while(in.status() == QDataStream::Ok);
 
 }
 
@@ -1229,4 +1229,12 @@ void MyQTextEdit::insertSymbols(){
     init.endEditBlock();
 
     qDebug() << "document text received: " << document()->toPlainText();
+
+//    // cerca errori
+
+//    for(auto it = _symbols.begin(); it != _symbols.end(); it++){
+//        if(it!=_symbols.end()-1)
+//            if(fractcmp(*it, *(it+1)) > 0)
+//                qDebug() << "error found!!!";
+//    }
 }
