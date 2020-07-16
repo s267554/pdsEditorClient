@@ -6,10 +6,16 @@ TEMPLATE        = app
 TARGET          = textedit
 
 HEADERS         = textedit.h \
-    client.h
+    client.h \
+    userlist.h \
+    userlistitem.h \
+    userscrolllist.h
 SOURCES         = textedit.cpp \
                   client.cpp \
-                  main.cpp
+                  main.cpp \
+                  userlist.cpp \
+                  userlistitem.cpp \
+                  userscrolllist.cpp
 
 RESOURCES += textedit.qrc
 build_all:!build_pass {

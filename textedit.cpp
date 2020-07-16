@@ -90,6 +90,8 @@
 // my include
 #include <QPainter>
 #include <QtNetwork>
+#include "userlist.h"
+#include <QDockWidget>
 
 
 #ifdef Q_OS_MAC
@@ -108,6 +110,23 @@ TextEdit::TextEdit(QWidget *parent)
     setWindowTitle(QCoreApplication::applicationName());
 
     textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGES HERE
+
+    auto container = new QWidget;
+    auto layout = new QHBoxLayout;
+    container->setLayout(layout);
+
+    _userList = new UserList(nullptr, true, QBoxLayout::Direction::TopToBottom);
+    _userScrollList = new UserScrollList(_userList);
+    layout->addWidget(_userScrollList);
+
+    QDockWidget *dock = new QDockWidget(tr("Users"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    dock->setWidget(container);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+
+     _userList->addItem(new UserListItem("prova"));
+
+    // end changes
 
     connect(textEdit, &QTextEdit::currentCharFormatChanged,
             this, &TextEdit::currentCharFormatChanged);

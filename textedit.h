@@ -68,6 +68,9 @@ QT_END_NAMESPACE
 /* MY ADD START */
 #include <QTextCursor>
 #include <QTextEdit>
+#include "userscrolllist.h"
+#include "userlist.h"
+
 
 class User{
 public:
@@ -173,6 +176,8 @@ public slots:
     //void fileNew();
 protected:
     void virtual closeEvent(QCloseEvent *e) override;
+    UserList* _userList = nullptr;
+    UserScrollList* _userScrollList = nullptr;
 
 private slots:
 //    void fileOpen();
