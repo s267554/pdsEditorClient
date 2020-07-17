@@ -134,6 +134,7 @@ public slots:
      */
     void docuReady();
     void changeBgcolor(quint32, QColor);
+    void updateProfile();
     void CatchChangeSignal(int pos, int rem, int add);      // move to private?
     void readMessage();
 

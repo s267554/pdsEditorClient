@@ -7,6 +7,7 @@ TARGET          = textedit
 
 HEADERS         = textedit.h \
     client.h \
+    profiledialog.h \
     user.h \
     userlist.h \
     userlistitem.h \
@@ -14,6 +15,7 @@ HEADERS         = textedit.h \
 SOURCES         = textedit.cpp \
                   client.cpp \
                   main.cpp \
+                  profiledialog.cpp \
                   userlist.cpp \
                   userlistitem.cpp \
                   userscrolllist.cpp

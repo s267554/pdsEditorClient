@@ -86,6 +86,7 @@
 
 #include "textedit.h"
 #include "client.h"
+#include "profiledialog.h"
 
 // my include
 #include <QPainter>
@@ -234,6 +235,9 @@ void TextEdit::setupFileActions()
 
     a = menu->addAction(tr("&Quit"), this, &QWidget::close);
     a->setShortcut(Qt::CTRL + Qt::Key_Q);
+
+    QAction *profile = menu->addAction(tr("&Update Profile"), textEdit, &MyQTextEdit::updateProfile);
+    tb->addAction(profile);
 }
 
 void TextEdit::setupViewActions()
@@ -1046,6 +1050,10 @@ void MyQTextEdit::addUser(const User &u) {
 
     auto ul = new UserListItem(u);
     connect(ul, &UserListItem::colorSelected, this, &MyQTextEdit::changeBgcolor);
+    if(_siteId == u.uid) {
+        //this is my profile, i.e. editable
+        // maybe change color of widget??
+    }
     _userList->addItem(ul, pos);
 
 
@@ -1240,6 +1248,26 @@ void MyQTextEdit::changeBgcolor(quint32 uid, QColor newColor){
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
 
+}
+
+void MyQTextEdit::updateProfile()
+{
+    // pointer warning
+    User* toChange = new User(_users.find(_siteId).value());
+    ProfileDialog dialog(this, toChange);
+    qDebug() << "user nick before: " << toChange->nick;
+    if(dialog.exec() == QDialog::Accepted) {
+        qDebug() << "user nick after: " << toChange->nick;
+        QByteArray block;
+        QDataStream out(&block, QIODevice::WriteOnly);
+        out.setVersion(QDataStream::Qt_4_0);
+
+        qDebug("sending an updated profile");
+        out << 'u';
+        out << User(*toChange);
+
+        tcpSocket->write(block);
+    }
 }
 
 
