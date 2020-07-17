@@ -1050,10 +1050,7 @@ void MyQTextEdit::addUser(const User &u) {
 
     auto ul = new UserListItem(u);
     connect(ul, &UserListItem::colorSelected, this, &MyQTextEdit::changeBgcolor);
-    if(_siteId == u.uid) {
-        //this is my profile, i.e. editable
-        // maybe change color of widget??
-    }
+
     _userList->addItem(ul, pos);
 
 

@@ -38,6 +38,9 @@ UserListItem::UserListItem(const User& user) : userModel(user)
     _editButton = new QPushButton("Cambia colore");
     name_layout->addWidget(_editButton);
 
+    _picLabel = new QLabel();
+    _picLabel->setPixmap(QPixmap::fromImage(user.icon).scaled(32, 32, Qt::IgnoreAspectRatio));
+    status_layout->addWidget(_picLabel);
 
     connect(_editButton, &QAbstractButton::clicked, this, &UserListItem::setColor);
 

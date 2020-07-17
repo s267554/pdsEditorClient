@@ -4,6 +4,7 @@
 #include <QLayout>
 #include <QPushButton>
 #include <QDialogButtonBox>
+#include <QFileDialog>
 
 ProfileDialog::ProfileDialog(QWidget *parent, User* user) : QDialog(parent)
 {
@@ -14,8 +15,11 @@ ProfileDialog::ProfileDialog(QWidget *parent, User* user) : QDialog(parent)
     auto nickLabel = new QLabel(tr("User nick:"));
     nickLabel->setBuddy(nickEdit);
 
+    auto picButton = new QPushButton(tr("Select propic from file..."));
+
     layout->addWidget(nickLabel);
     layout->addWidget(nickEdit);
+    layout->addWidget(picButton);
 
     auto quitButton = new QPushButton(tr("Cancel"));
 
@@ -27,6 +31,8 @@ ProfileDialog::ProfileDialog(QWidget *parent, User* user) : QDialog(parent)
 
     layout->addWidget(buttonBox);
 
+    connect(picButton, &QAbstractButton::clicked,
+            this, &ProfileDialog::openImageFromFile);
     connect(acceptButton, &QAbstractButton::clicked,
             this, &ProfileDialog::changesAccepted);
     connect(quitButton, &QAbstractButton::clicked, this, &QWidget::close);
@@ -36,5 +42,12 @@ ProfileDialog::ProfileDialog(QWidget *parent, User* user) : QDialog(parent)
 void ProfileDialog::changesAccepted()
 {
     user->nick = nickEdit->text();
+    user->icon = QImage(fileName).scaled(32, 32, Qt::IgnoreAspectRatio);
     this->done(Accepted);
+}
+
+void ProfileDialog::openImageFromFile()
+{
+    fileName = QFileDialog::getOpenFileName(this,
+        tr("Open Image"), "/home/", tr("Image Files (*.png *.jpg *.bmp)"));
 }

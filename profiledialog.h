@@ -21,8 +21,10 @@ private:
     QLineEdit *nickEdit = nullptr;
     QPushButton *acceptButton = nullptr;
     User* user = nullptr;
+    QString fileName;
 private slots:
     void changesAccepted();
+    void openImageFromFile();
 };
 
 #endif // PROFILEDIALOG_H

@@ -22,6 +22,7 @@ private:
     QLabel*      _nameLabel  = nullptr;
     QPushButton* _editButton = nullptr;
     QLabel* _statusLabel = nullptr;
+    QLabel* _picLabel = nullptr;
 
 signals:
     void colorSelected(quint32, QColor);
