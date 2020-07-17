@@ -70,18 +70,7 @@ QT_END_NAMESPACE
 #include <QTextEdit>
 #include "userscrolllist.h"
 #include "userlist.h"
-
-
-class User{
-public:
-    User(quint32 u, QString n, QColor col, int tc): uid(u), nick(n), color(col), startCursor(tc){}
-    User(){}
-    quint32 uid = 0;                                // se faccio map<int, user> non serve, la uso come chiave
-    QString nick = "";
-    QColor color = QColor();
-    int startCursor = 0;
-    QImage icon =  QImage();                    // controllare il tipo
-};
+#include "user.h"
 
 class Symbol {
 public:
@@ -120,12 +109,14 @@ public:
     void localInsert(int i, QChar i1, QTextCharFormat f);
     void localErase(int i);
     int fractcmp(Symbol s1, Symbol s2);
+    UserList* _userList = nullptr;
+    UserScrollList* _userScrollList = nullptr;
 private:
 
 
     quint32 _siteId = 0;
-    QMap<quint32, User> _users;
 public:
+    QMap<quint32, User> _users;
     QMap<quint32, QTextCursor> _cursors;
     quint32 getSiteId();
     QString to_string();
@@ -176,8 +167,6 @@ public slots:
     //void fileNew();
 protected:
     void virtual closeEvent(QCloseEvent *e) override;
-    UserList* _userList = nullptr;
-    UserScrollList* _userScrollList = nullptr;
 
 private slots:
 //    void fileOpen();

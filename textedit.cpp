@@ -111,26 +111,18 @@ TextEdit::TextEdit(QWidget *parent)
 
     textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGES HERE
 
-    auto container = new QWidget;
-    auto layout = new QHBoxLayout;
-    container->setLayout(layout);
 
-    _userList = new UserList(nullptr, true, QBoxLayout::Direction::TopToBottom);
-    _userScrollList = new UserScrollList(_userList);
-    layout->addWidget(_userScrollList);
+    //auto prova = new UserListItem("prova");
 
-    QDockWidget *dock = new QDockWidget(tr("Users"), this);
-    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    dock->setWidget(container);
-    addDockWidget(Qt::RightDockWidgetArea, dock);
-
-     _userList->addItem(new UserListItem("prova"));
+    // prova
+     //_userList->addItem(new UserListItem("prova"));
 
     // end changes
 
     connect(textEdit, &QTextEdit::currentCharFormatChanged,
             this, &TextEdit::currentCharFormatChanged);
     connect(textEdit, &QTextEdit::cursorPositionChanged,this, &TextEdit::cursorPositionChanged);
+
     setCentralWidget(textEdit);
 
     setToolButtonStyle(Qt::ToolButtonFollowStyle);
@@ -819,6 +811,14 @@ void TextEdit::colorChanged(const QColor &c)
 
 MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
+    auto container = new QWidget();
+    auto layout = new QHBoxLayout;
+    container->setLayout(layout);
+
+    _userList = new UserList(nullptr, true, QBoxLayout::Direction::TopToBottom);
+    _userScrollList = new UserScrollList(_userList);
+    layout->addWidget(_userScrollList);
+
     tcpSocket = new QTcpSocket;
     Client client(this, tcpSocket);
     connect(&client, &Client::waitingDocu, this, &MyQTextEdit::docuReady);
@@ -826,6 +826,9 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
     if(_siteId == 0) {
         exit(0);
     }
+
+    container->show();
+
 }
 
 MyQTextEdit::~MyQTextEdit(){}                   // se tolgo questo non ho la vtable STUDIA!!!
@@ -1025,6 +1028,19 @@ void MyQTextEdit::process(const User &u) {
     if(!_users.contains(u.uid) && u.uid!=_siteId)
         _cursors.insert(u.uid, QTextCursor(this->document()));
 
+    int pos = 1;
+    for(auto ul: _userList->getItems()) {
+        if(ul->userModel.uid == u.uid) {
+            _userList->removeItem(ul);
+        }
+        pos++;
+    }
+
+    auto ul = new UserListItem(u);
+    connect(ul, &UserListItem::colorSelected, this, &MyQTextEdit::changeBgcolor);
+    _userList->addItem(ul, pos);
+
+
     // insert or replace new User
     _users.insert(u.uid, u);
 
@@ -1167,22 +1183,41 @@ void MyQTextEdit::changeBgcolor(quint32 uid, QColor newColor){
 
     // proactive
     u.color = newColor;
+    _users.insert(uid, u);
 
     // retroactive
     // redraw every char made by said user, got any better ideas?
     // could be parallelized just in case
-    auto supportCursor = QTextCursor(this->document());
-    int pos = 0;
-    for(auto s = _symbols.begin();s != _symbols.end();s++, pos++){
-        if(s->siteid == uid){
-            supportCursor.setPosition(pos);
-            supportCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor);
-            QTextCharFormat newFormat(s->format);
 
-            newFormat.setBackground(u.color);
-            supportCursor.mergeCharFormat(newFormat);
-        }
+    disconnect(document(), &QTextDocument::contentsChange,
+            this, &MyQTextEdit::CatchChangeSignal);
+
+    QTextCursor init(document()->begin());
+
+
+    // ultima prova stupida
+    init.beginEditBlock();
+    document()->clear();
+    for(auto it = _symbols.begin(); it!=_symbols.end(); it++){
+        // you don't have the users yet, how can you find their color?
+        QTextCharFormat newFormat(it->format);
+        newFormat.setBackground(_users.find(it->siteid).value().color);
+        init.insertText(it->c, newFormat);
     }
+    init.endEditBlock();
+
+//    for(auto it = _symbols.begin(); it!=_symbols.end(); it++, init.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, 1)){
+//        if(it->siteid == uid) {
+//            QTextCharFormat newFormat(it->format);
+//            newFormat.setBackground(newColor);
+//            init.deleteChar();
+//            init.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor, 1);
+//            init.insertText(it->c, newFormat);
+//        }
+//    }
+
+    connect(document(), &QTextDocument::contentsChange,
+            this, &MyQTextEdit::CatchChangeSignal);
 
 }
 
