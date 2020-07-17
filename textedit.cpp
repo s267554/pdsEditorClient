@@ -111,13 +111,10 @@ TextEdit::TextEdit(QWidget *parent)
 
     textEdit = new MyQTextEdit(this);                       // MY ONLY CHANGES HERE
 
-
-    //auto prova = new UserListItem("prova");
-
-    // prova
-     //_userList->addItem(new UserListItem("prova"));
-
-    // end changes
+    dock = new QDockWidget(tr("Users"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    dock->setWidget(textEdit->container);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
 
     connect(textEdit, &QTextEdit::currentCharFormatChanged,
             this, &TextEdit::currentCharFormatChanged);
@@ -129,6 +126,7 @@ TextEdit::TextEdit(QWidget *parent)
     setupFileActions();
     setupEditActions();
     setupTextActions();
+    setupViewActions();
 
 //    {
 //        QMenu *helpMenu = menuBar()->addMenu(tr("Help"));
@@ -236,6 +234,17 @@ void TextEdit::setupFileActions()
 
     a = menu->addAction(tr("&Quit"), this, &QWidget::close);
     a->setShortcut(Qt::CTRL + Qt::Key_Q);
+}
+
+void TextEdit::setupViewActions()
+{
+    QToolBar *tb = addToolBar(tr("View Actions"));
+    QMenu *menu = menuBar()->addMenu(tr("&View"));
+    menu->addAction(dock->toggleViewAction());
+    tb->addAction(dock->toggleViewAction());
+
+    menu->addSeparator();
+
 }
 
 void TextEdit::setupEditActions()
@@ -811,7 +820,7 @@ void TextEdit::colorChanged(const QColor &c)
 
 MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
 
-    auto container = new QWidget();
+    container = new QWidget();
     auto layout = new QHBoxLayout;
     container->setLayout(layout);
 
@@ -827,7 +836,7 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
         exit(0);
     }
 
-    container->show();
+    //container->show();
 
 }
 
@@ -992,8 +1001,7 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
 
     // for every foreign cursor, paint it and draw nick
     for(auto u: _users){
-        if(u.uid != _siteId){
-
+        if(u.uid != _siteId && _cursors.contains(u.uid)){
             // paint User's cursor with its color
             const QRect qRect = cursorRect(_cursors.find(u.uid).value());
             QPainter qPainter(viewport());

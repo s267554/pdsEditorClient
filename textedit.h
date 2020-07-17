@@ -111,6 +111,7 @@ public:
     int fractcmp(Symbol s1, Symbol s2);
     UserList* _userList = nullptr;
     UserScrollList* _userScrollList = nullptr;
+    QWidget* container = nullptr;
 private:
 
 
@@ -197,6 +198,7 @@ private:
     void setupFileActions();
     void setupEditActions();
     void setupTextActions();
+    void setupViewActions();
     bool maybeSave();
     void setCurrentFileName(const QString &fileName);
 
@@ -205,6 +207,8 @@ private:
     void colorChanged(const QColor &c);
     //void alignmentChanged(Qt::Alignment a);
 
+    QDockWidget *dock;
+    QAction *actionDock;
     QAction *actionSave;
     QAction *actionTextBold;
     QAction *actionTextUnderline;

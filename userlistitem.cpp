@@ -38,6 +38,7 @@ UserListItem::UserListItem(const User& user) : userModel(user)
     _editButton = new QPushButton("Cambia colore");
     name_layout->addWidget(_editButton);
 
+
     connect(_editButton, &QAbstractButton::clicked, this, &UserListItem::setColor);
 
 }
