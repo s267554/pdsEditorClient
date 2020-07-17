@@ -141,7 +141,8 @@ public:
     QTcpSocket* tcpSocket = nullptr;
     QDataStream in;                         // sarà da collegare al socket
     QDataStream out;                        // per ora non serve
-    void process(const User &u);
+    void addUser(const User &u);
+    void removeUser(quint32);
     QStringList _files = {};
     void fakeNewFile();                // warning to be fixed!!!
     void fakeOpenFile();                // likewise

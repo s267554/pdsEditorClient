@@ -1022,7 +1022,7 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
     }
 }
 
-void MyQTextEdit::process(const User &u) {
+void MyQTextEdit::addUser(const User &u) {
 
     // if User is not already present and it's not me then I have to create its Text Cursor
     if(!_users.contains(u.uid) && u.uid!=_siteId)
@@ -1043,6 +1043,19 @@ void MyQTextEdit::process(const User &u) {
 
     // insert or replace new User
     _users.insert(u.uid, u);
+
+}
+
+void MyQTextEdit::removeUser(quint32 uid) {
+
+    _cursors.remove(uid);
+
+    for(auto ul: _userList->getItems()) {
+        if(ul->userModel.uid == uid) {
+            // just change its status
+            ul->changeStatus(false);
+        }
+    }
 
 }
 
@@ -1244,12 +1257,13 @@ void MyQTextEdit::readMessage()
         case 'u':
             in >> usr;
             if(in.commitTransaction())
-                process(usr);
+                addUser(usr);
             break;
         case 'd':
             in >> uid;
             if(in.commitTransaction())
-                _users.remove(uid);
+                removeUser(uid);
+                //_users.remove(uid);
             break;
         case 't':
             in >> _symbols;

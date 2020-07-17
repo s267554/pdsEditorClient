@@ -23,15 +23,28 @@ UserListItem::UserListItem(const User& user) : userModel(user)
     name_layout->setMargin(0);
     container_layout->addLayout(name_layout);
 
+    auto status_layout = new QHBoxLayout;
+    status_layout->setSizeConstraint(QLayout::SetMinAndMaxSize);
+    status_layout->setMargin(0);
+    container_layout->addLayout(status_layout);
+
     // The UI.
     _nameLabel = new QLabel(userModel.nick);
     name_layout->addWidget(_nameLabel);
+
+    _statusLabel = new QLabel("Connected");
+    status_layout->addWidget(_statusLabel);
 
     _editButton = new QPushButton("Cambia colore");
     name_layout->addWidget(_editButton);
 
     connect(_editButton, &QAbstractButton::clicked, this, &UserListItem::setColor);
 
+}
+
+void UserListItem::changeStatus(bool online)
+{
+    _statusLabel->setText(online == true ? "Connected" : "Disconnected");
 }
 
 void UserListItem::setColor()
@@ -42,3 +55,4 @@ void UserListItem::setColor()
         emit colorSelected(this->userModel.uid, color);
     }
 }
+

@@ -14,12 +14,14 @@ public:
     UserListItem(const QString& text);
     UserListItem(const User&);
     User userModel;
+    void changeStatus(bool online);
 
 public slots:
     void setColor();
 private:
     QLabel*      _nameLabel  = nullptr;
     QPushButton* _editButton = nullptr;
+    QLabel* _statusLabel = nullptr;
 
 signals:
     void colorSelected(quint32, QColor);
