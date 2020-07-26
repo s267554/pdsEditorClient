@@ -6,6 +6,8 @@
 #include "userlistitem.h"
 #include <QBoxLayout>
 
+#include <functional>
+
 class UserList : public QFrame
 {
     Q_OBJECT
