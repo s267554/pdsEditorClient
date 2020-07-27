@@ -87,6 +87,7 @@ private slots:
     void fileTry();
     void fileRead();
     void openLink();
+    void signForm();
 private:
 
     QComboBox *hostCombo = nullptr;
@@ -106,6 +107,7 @@ private:
     QComboBox *loginCombo = nullptr;
     QLineEdit *userLineEdit = nullptr;
     QLineEdit *pwdLineEdit = nullptr;
+    QLineEdit *nickLineEdit = nullptr;
 
     QComboBox *openCombo = nullptr;
     QComboBox *fileCombo = nullptr;

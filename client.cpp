@@ -62,6 +62,7 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket, LoginInfo* info)
     , userLineEdit(new QLineEdit)
     , linkLineEdit(new QLineEdit)
     , pwdLineEdit(new QLineEdit)
+    , nickLineEdit(new QLineEdit)
     , openCombo(new QComboBox)
     , fileCombo(new QComboBox)
     , getFortuneButton(new QPushButton(tr("Next")))
@@ -100,6 +101,8 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket, LoginInfo* info)
     userLabel->setBuddy(userLineEdit);
     auto pwdLabel = new QLabel(tr("User password:"));
     pwdLabel->setBuddy(pwdLineEdit);
+    auto nickLabel = new QLabel(tr("User password:"));
+    nickLabel->setBuddy(nickLineEdit);
 
     auto hostLabel = new QLabel(tr("&Server name:"));
     hostLabel->setBuddy(hostCombo);
@@ -123,6 +126,7 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket, LoginInfo* info)
     loginCombo->setEnabled(false);
     userLineEdit->setEnabled(false);
     pwdLineEdit->setEnabled(false);
+    nickLineEdit->setEnabled(false);
 
     openCombo->addItems({"open", "new"});
     openCombo->setEnabled(false);
@@ -179,18 +183,20 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket, LoginInfo* info)
     mainLayout->addWidget(userLineEdit, 3, 1);
     mainLayout->addWidget(pwdLabel, 4, 0);
     mainLayout->addWidget(pwdLineEdit, 4, 1);
+    mainLayout->addWidget(nickLabel, 5, 0);
+    mainLayout->addWidget(nickLineEdit, 5, 1);
 
-    mainLayout->addWidget(openCombo, 5, 0, 1, 2);
+    mainLayout->addWidget(openCombo, 6, 0, 1, 2);
 
-    mainLayout->addWidget(fileLabel, 6, 0);
-    mainLayout->addWidget(fileCombo, 6, 1);
+    mainLayout->addWidget(fileLabel, 7, 0);
+    mainLayout->addWidget(fileCombo, 7, 1);
 
-    mainLayout->addWidget(statusLabel, 7, 0, 1, 2);
+    mainLayout->addWidget(statusLabel, 8, 0, 1, 2);
 
-    mainLayout->addWidget(linkLabel, 8, 0);
-    mainLayout->addWidget(linkLineEdit, 8, 1);
+    mainLayout->addWidget(linkLabel, 9, 0);
+    mainLayout->addWidget(linkLineEdit, 9, 1);
 
-    mainLayout->addWidget(buttonBox, 9, 0, 1, 2);
+    mainLayout->addWidget(buttonBox, 10, 0, 1, 2);
 
     setWindowTitle(QGuiApplication::applicationDisplayName());
     portLineEdit->setFocus();
@@ -241,6 +247,7 @@ void Client::readFortune()
     getFortuneButton->setEnabled(true);
     connect(getFortuneButton, &QAbstractButton::clicked,
             this, &Client::loginTry);
+    connect(loginCombo, &QComboBox::currentTextChanged, this, &Client::signForm);
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
@@ -420,6 +427,8 @@ void Client::loginTry()
 
     out << userLineEdit->text();
     out << pwdLineEdit->text();
+    if(loginCombo->currentText()=="signup")
+            out << nickLineEdit->text();
 
     connect(tcpSocket, &QIODevice::readyRead, this, &Client::loginRead);
 
@@ -428,3 +437,13 @@ void Client::loginTry()
 
 }
 
+void Client::signForm()
+{
+    if (loginCombo->currentText()=="login"){
+        nickLineEdit->setEnabled(false);
+    }
+
+    if (loginCombo->currentText()=="signup"){
+        nickLineEdit->setEnabled(true);
+    }
+}
