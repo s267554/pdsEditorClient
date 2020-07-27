@@ -6,17 +6,29 @@
 #include <QDialogButtonBox>
 #include <QFileDialog>
 
-ProfileDialog::ProfileDialog(QWidget *parent, User* user) : QDialog(parent)
+ProfileDialog::ProfileDialog(QWidget *parent, User* user, QString *uname, QString *pw) : QDialog(parent)
 {
     auto layout = new QGridLayout(this);
     this->user = user;
+    this->pw = pw;
+    this->uname = uname;
 
     nickEdit = new QLineEdit(user->nick);
     auto nickLabel = new QLabel(tr("User nick:"));
     nickLabel->setBuddy(nickEdit);
+    userEdit = new QLineEdit();
+    auto userLabel = new QLabel(tr("Username:"));
+    userLabel->setBuddy(userEdit);
+    pwEdit = new QLineEdit();
+    auto pwLabel = new QLabel(tr("Password:"));
+    pwLabel->setBuddy(pwEdit);
 
     auto picButton = new QPushButton(tr("Select propic from file..."));
 
+    layout->addWidget(userLabel);
+    layout->addWidget(userEdit);
+    layout->addWidget(pwLabel);
+    layout->addWidget(pwEdit);
     layout->addWidget(nickLabel);
     layout->addWidget(nickEdit);
     layout->addWidget(picButton);
@@ -41,6 +53,8 @@ ProfileDialog::ProfileDialog(QWidget *parent, User* user) : QDialog(parent)
 
 void ProfileDialog::changesAccepted()
 {
+    *uname = userEdit->text();
+    *pw = pwEdit->text();
     user->nick = nickEdit->text();
     user->icon = QImage(fileName).scaled(32, 32, Qt::IgnoreAspectRatio);
     this->done(Accepted);

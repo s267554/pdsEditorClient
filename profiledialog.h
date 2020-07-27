@@ -16,12 +16,16 @@ class ProfileDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit ProfileDialog(QWidget *parent = nullptr, User* = nullptr);
+    explicit ProfileDialog(QWidget *parent = nullptr, User *user= nullptr, QString *uname=nullptr, QString *pw=nullptr);
 private:
     QLineEdit *nickEdit = nullptr;
+    QLineEdit *userEdit = nullptr;
+    QLineEdit *pwEdit = nullptr;
     QPushButton *acceptButton = nullptr;
     User* user = nullptr;
     QString fileName;
+    QString *uname;
+    QString *pw;
 private slots:
     void changesAccepted();
     void openImageFromFile();

@@ -1263,7 +1263,9 @@ void MyQTextEdit::updateProfile()
 {
     // pointer warning
     User* toChange = new User(_users.find(_siteId).value());
-    ProfileDialog dialog(this, toChange);
+    QString *uname = new QString ();
+    QString *pw = new QString ();
+    ProfileDialog dialog(this, toChange, uname, pw);
     qDebug() << "user nick before: " << toChange->nick;
     if(dialog.exec() == QDialog::Accepted) {
         qDebug() << "user nick after: " << toChange->nick;
@@ -1274,6 +1276,8 @@ void MyQTextEdit::updateProfile()
         qDebug("sending an updated profile");
         out << 'u';
         out << User(*toChange);
+        out << QString(*uname);
+        out << QString(*pw);
 
         tcpSocket->write(block);
     }
