@@ -1042,7 +1042,7 @@ void MyQTextEdit::paintEvent(QPaintEvent *event) {
 void MyQTextEdit::addUser(const User &u) {
 
     // if User is not already present and it's not me then I have to create its Text Cursor
-    if(!_users.contains(u.uid) && u.uid!=_siteId)
+    // I should this evertime nonethelessif(!_users.contains(u.uid) && u.uid!=_siteId)
         _cursors.insert(u.uid, QTextCursor(this->document()));
 
     int pos = 1;
@@ -1179,14 +1179,15 @@ void MyQTextEdit::process(const Message& m) {
 
     _cursors.find(m.genFrom)->endEditBlock();
 
+    adjustHeight();
+
     connect(document(), &QTextDocument::contentsChange,
             this, &MyQTextEdit::CatchChangeSignal);
 
 }
 
-void MyQTextEdit::docuReady()
+void MyQTextEdit::adjustHeight()
 {
-
     QTextDocument* doc = this->document();
     QTextBlock currentBlock = doc->firstBlock();
 
@@ -1198,6 +1199,12 @@ void MyQTextEdit::docuReady()
         cursor.setBlockFormat(blockFormat);
         currentBlock = currentBlock.next();
     }
+}
+
+void MyQTextEdit::docuReady()
+{
+
+    adjustHeight();
 
     connect(tcpSocket, &QIODevice::readyRead, this, &MyQTextEdit::readMessage);
     in.setDevice(tcpSocket);

@@ -153,6 +153,8 @@ public:
     void fakeOpenFile();                // likewise
     void insertSymbols();
     std::vector<int> prefix(std::vector<int>, int, int);
+    void adjustHeight();
+    
 signals:
     void readyToShow();
 
