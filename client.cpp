@@ -54,17 +54,20 @@
 #include "client.h"
 #include "textedit.h"
 
-Client::Client(QWidget *parent, QTcpSocket* parentSocket)
+Client::Client(QWidget *parent, QTcpSocket* parentSocket, LoginInfo* info)
     : QDialog(parent)
     , hostCombo(new QComboBox)
     , portLineEdit(new QLineEdit)
     , loginCombo(new QComboBox)
     , userLineEdit(new QLineEdit)
+    , linkLineEdit(new QLineEdit)
     , pwdLineEdit(new QLineEdit)
     , openCombo(new QComboBox)
     , fileCombo(new QComboBox)
     , getFortuneButton(new QPushButton(tr("Next")))
+    , openLinkButton(new QPushButton(tr("Open link")))
     , tcpSocket(parentSocket)
+    , loginInfo(info)
 {
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     hostCombo->setEditable(true);
@@ -100,11 +103,14 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket)
 
     auto hostLabel = new QLabel(tr("&Server name:"));
     hostLabel->setBuddy(hostCombo);
-    auto portLabel = new QLabel(tr("S&erver port:"));
+    auto portLabel = new QLabel(tr("&Server port:"));
     portLabel->setBuddy(portLineEdit);
 
-    auto fileLabel = new QLabel(tr("File name:"));
+    auto fileLabel = new QLabel(tr("&File name:"));
     fileLabel->setBuddy(fileCombo);
+
+    auto linkLabel = new QLabel(tr("&Invitation link:"));
+    linkLabel->setBuddy(linkLineEdit);
 
 
     statusLabel = new QLabel(tr("This examples requires that you run the "
@@ -125,6 +131,7 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket)
     auto quitButton = new QPushButton(tr("Quit"));
 
     auto buttonBox = new QDialogButtonBox;
+    buttonBox->addButton(openLinkButton, QDialogButtonBox::ActionRole);
     buttonBox->addButton(getFortuneButton, QDialogButtonBox::ActionRole);
     buttonBox->addButton(quitButton, QDialogButtonBox::RejectRole);
 
@@ -137,6 +144,8 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket)
             this, &Client::enableGetFortuneButton);
     connect(getFortuneButton, &QAbstractButton::clicked,
             this, &Client::requestNewFortune);
+    connect(openLinkButton, &QAbstractButton::clicked,
+            this, &Client::openLink);
     connect(quitButton, &QAbstractButton::clicked, this, &QWidget::close);
 
     connect(tcpSocket, &QTcpSocket::connected, this, &Client::readFortune);
@@ -177,7 +186,11 @@ Client::Client(QWidget *parent, QTcpSocket* parentSocket)
     mainLayout->addWidget(fileCombo, 6, 1);
 
     mainLayout->addWidget(statusLabel, 7, 0, 1, 2);
-    mainLayout->addWidget(buttonBox, 8, 0, 1, 2);
+
+    mainLayout->addWidget(linkLabel, 8, 0);
+    mainLayout->addWidget(linkLineEdit, 8, 1);
+
+    mainLayout->addWidget(buttonBox, 9, 0, 1, 2);
 
     setWindowTitle(QGuiApplication::applicationDisplayName());
     portLineEdit->setFocus();
@@ -357,6 +370,11 @@ void Client::fileTry()
 
     out << fileCombo->currentText();
 
+    loginInfo->file = fileCombo->currentText();
+    loginInfo->host = hostCombo->currentText();
+    qDebug() << portLineEdit->text().toInt();
+    loginInfo->port = portLineEdit->text().toInt();
+
     emit waitingDocu();
     disconnect(tcpSocket, &QIODevice::readyRead, this, &Client::loginRead);
     tcpSocket->flush();
@@ -368,6 +386,21 @@ void Client::fileTry()
 void Client::fileRead()
 {
 
+}
+
+void Client::openLink()
+{
+    QUrl link = QUrl(linkLineEdit->text());
+    if(!link.isValid()) {
+        QMessageBox msgBox;
+        msgBox.setText("The link inserted is not a valid one.");
+        msgBox.exec();
+    }
+    hostCombo->setEditText(link.host());
+    portLineEdit->setText(QString::number(link.port()));
+    fileCombo->setEditable(true);
+    fileCombo->setEditText(link.path().remove(0, 1));
+    fileCombo->setEditable(true);
 }
 
 void Client::loginTry()

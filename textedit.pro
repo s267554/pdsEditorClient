@@ -7,6 +7,7 @@ TARGET          = textedit
 
 HEADERS         = textedit.h \
     client.h \
+    logininfo.h \
     profiledialog.h \
     user.h \
     userlist.h \

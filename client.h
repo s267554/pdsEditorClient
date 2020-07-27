@@ -54,6 +54,7 @@
 #include <QDataStream>
 #include <QDialog>
 #include <QTcpSocket>
+#include "logininfo.h"
 
 QT_BEGIN_NAMESPACE
 class QComboBox;
@@ -70,7 +71,7 @@ class Client : public QDialog
     Q_OBJECT
 
 public:
-    explicit Client(QWidget *parent = nullptr, QTcpSocket* socket = nullptr);
+    explicit Client(QWidget *parent = nullptr, QTcpSocket* socket = nullptr, LoginInfo* loginInfo = nullptr);
 
 signals:
     void waitingDocu();
@@ -85,13 +86,15 @@ private slots:
     void loginRead();
     void fileTry();
     void fileRead();
-
+    void openLink();
 private:
 
     QComboBox *hostCombo = nullptr;
     QLineEdit *portLineEdit = nullptr;
     QLabel *statusLabel = nullptr;
     QPushButton *getFortuneButton = nullptr;
+    QLineEdit *linkLineEdit = nullptr;
+    QPushButton *openLinkButton = nullptr;
     QTcpSocket *tcpSocket = nullptr;
 
     QDataStream in;
@@ -106,6 +109,8 @@ private:
 
     QComboBox *openCombo = nullptr;
     QComboBox *fileCombo = nullptr;
+
+    LoginInfo* loginInfo = nullptr;
     /* END ADDS */
 
     int uid;

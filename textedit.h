@@ -71,6 +71,7 @@ QT_END_NAMESPACE
 #include "userscrolllist.h"
 #include "userlist.h"
 #include "user.h"
+#include "logininfo.h"
 
 class Symbol {
 public:
@@ -112,8 +113,8 @@ public:
     UserList* _userList = nullptr;
     UserScrollList* _userScrollList = nullptr;
     QWidget* container = nullptr;
+    LoginInfo* loginInfo = nullptr;
 private:
-
 
     quint32 _siteId = 0;
 public:
@@ -137,6 +138,8 @@ public slots:
     void updateProfile();
     void CatchChangeSignal(int pos, int rem, int add);      // move to private?
     void readMessage();
+    void generateLink();
+
 
 // last hot stuff
 public:

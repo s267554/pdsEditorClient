@@ -93,6 +93,7 @@
 #include <QtNetwork>
 #include "userlist.h"
 #include <QDockWidget>
+#include "logininfo.h"
 
 
 #ifdef Q_OS_MAC
@@ -238,6 +239,9 @@ void TextEdit::setupFileActions()
 
     QAction *profile = menu->addAction(tr("&Update Profile"), textEdit, &MyQTextEdit::updateProfile);
     tb->addAction(profile);
+
+    QAction *link = menu->addAction(tr("&Generate Link"), textEdit, &MyQTextEdit::generateLink);
+    tb->addAction(link);
 }
 
 void TextEdit::setupViewActions()
@@ -833,7 +837,8 @@ MyQTextEdit::MyQTextEdit(QWidget* p) : QTextEdit(p){
     layout->addWidget(_userScrollList);
 
     tcpSocket = new QTcpSocket;
-    Client client(this, tcpSocket);
+    loginInfo = new LoginInfo;
+    Client client(this, tcpSocket, loginInfo);
     connect(&client, &Client::waitingDocu, this, &MyQTextEdit::docuReady);
     _siteId = client.exec();
     if(_siteId == 0) {
@@ -1314,6 +1319,18 @@ void MyQTextEdit::readMessage()
             qDebug() << "received '" << char(op) << "' message";
     } while(in.status() == QDataStream::Ok);
 
+}
+
+void MyQTextEdit::generateLink()
+{
+    QUrl link = QUrl("texteditor://" + loginInfo->host + "/" + loginInfo->file);
+    link.setPort(loginInfo->port);
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(link.toString());
+    QMessageBox msgBox;
+    msgBox.setTextInteractionFlags(Qt::TextInteractionFlag::TextSelectableByMouse);
+    msgBox.setText("The link copied in your clipboard " + link.toString());
+    msgBox.exec();
 }
 
 void MyQTextEdit::insertSymbols(){
